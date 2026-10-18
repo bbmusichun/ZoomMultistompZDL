@@ -1,6 +1,8 @@
 /* Compatible NAM -> checked fixed-engine ZDL. No uploaded code is executed. */
 (function(root){
 'use strict';
+const SlotIdentity=typeof module!=='undefined'?require('./slot_identity.js'):root.SlotIdentity;
+const CoverArt=typeof module!=='undefined'?require('./cover_art.js'):root.CoverArt;
 const D=[1,3,7,17,41,101,239,1,3,7,17,41,101,239,1,13,1,3,7,17,41,101,239];
 const K=[...Array(14).fill(6),15,15,...Array(7).fill(6)];
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -60,10 +62,12 @@ async function convert(model,template,manifest){
  return {bytes:out,report:{capture:String(model.metadata?.name||'Custom NAM').slice(0,160),creator:String(model.metadata?.modeled_by||'').slice(0,160),version:manifest.output_version,sourceSampleRate:selected.sampleRate,pedalSampleRate:44100,submodel:selected.submodel,weights:1871,sha256:await sha256(out),engineSha256:manifest.sha256,note:'Replaces the capture in NAMLite for all patches using it. Hardware fidelity and available DSP headroom are not guaranteed.'}};
 }
 const REGISTRY_KEY='namlite-captures-v1';
-// 16 capture slots. 1-8 keep FXIDs 900-907; 9-16 are 950-957 (908-913 were the
-// retired CabIR bank and NAM test effects, which may still sit on a pedal).
-const NAM_SLOTS=16;
-function namFxid(slot){return slot<=8?899+slot:941+slot;}
+// 216 capture slots. 1-8 keep FXIDs 900-907; 9-16 are 950-957 (908-913 were the
+// retired CabIR bank and NAM test effects, which may still sit on a pedal);
+// 17-216 are 500-699, made in the browser from one base template
+// (slot_identity.js). IDs are permanent: patches store them.
+const NAM_SLOTS=216;
+function namFxid(slot){return slot<=8?899+slot:slot<=16?941+slot:483+slot;}
 // Starts with a LETTER: slots 10-16 put two digits after 'NAM', so a slot-1
 // name starting with a digit could otherwise read as one of them on the pedal.
 function shortName(value){
@@ -89,18 +93,23 @@ function remember(storage,report){
 // cut-down names match freeze it on boot (docs/SAFE-DSP-RULES.md). Every
 // 'NAMLite-<name>' became 'NAMLite-', so any two captures froze the pedal.
 // 'NAM<slot><name>' is 8 characters at most and unique per slot: 4 name chars
-// for slots 1-9, 3 for 10-16 (names start with a letter, so 'NAM1'+'0…' can
-// never equal slot 10's 'NAM10…').
-function fileName(slot,name){return 'NAM'+slot+shortName(name).slice(0,slot<10?4:3)+'.ZDL';}
-async function convertNamed(model,template,manifest,slot,name){
+// for slots 1-9, 3 for 10-99, 2 for 100-216 (names start with a letter, so the
+// slot digits always end where the name begins: 'NAM1'+'0…' can never equal
+// slot 10's 'NAM10…').
+function fileName(slot,name){return 'NAM'+slot+shortName(name).slice(0,slot<10?4:slot<100?3:2)+'.ZDL';}
+async function convertNamed(model,template,manifest,slot,name,icon){
  name=shortName(name);
  need(manifest.format===2,'Unsupported multi-capture engine.');
- const selected=manifest.slots.find(s=>s.slot===slot);
+ let selected;try{selected=SlotIdentity.slotMeta(manifest,slot);}catch{selected=null;}
+ // Slots past the shipped templates: `template` is the shared base; make this slot from it.
+ if(selected&&selected.generated){template=await SlotIdentity.generateSlot(template,manifest,slot,sha256);selected={...selected,bytes:template.length,sha256:await sha256(template)};}
  need(selected&&selected.fxid===namFxid(slot)&&selected.id===patchId(selected.fxid),'Invalid capture identity.');
  const result=await convert(model,template,{...manifest,...selected,format:1});
  const at=selected.name_offset;need(Number.isInteger(at)&&at>=76&&at+12<=result.bytes.length,'Invalid display name offset.');
  const display=pedalName(name);result.bytes.fill(0,at,at+12);result.bytes.set(new TextEncoder().encode(display),at);
- Object.assign(result.report,{slot,fxid:selected.fxid,id:selected.id,shortName:name,displayName:display,name:'NAMLite-'+name,filename:fileName(slot,name),sha256:await sha256(result.bytes),note:'Only replaces the chosen capture slot. Other capture slots and original NAMLite are unchanged. Multiple simultaneous models may exceed pedal DSP capacity.'});
+ // The pedal-screen picture: the chosen icon and the name (cover_art.js).
+ if(manifest.cover){icon=icon||manifest.cover.default_icon;CoverArt.writeCover(result.bytes,selected,manifest.cover,name,icon);}
+ Object.assign(result.report,{slot,fxid:selected.fxid,id:selected.id,shortName:name,icon:icon||null,displayName:display,name:'NAMLite-'+name,filename:fileName(slot,name),sha256:await sha256(result.bytes),note:'Only replaces the chosen capture slot. Other capture slots and original NAMLite are unchanged. Multiple simultaneous models may exceed pedal DSP capacity.'});
  return result;
 }
 const api={selectModel,reorder,convert,convertNamed,shortName,pedalName,samePedalName,PEDAL_NAME_CHARS,fileName,patchId,namFxid,NAM_SLOTS,readRegistry,remember,REGISTRY_KEY,sha256};

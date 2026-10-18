@@ -4,11 +4,20 @@ import re
 SHORT = r'[A-Za-z0-9][A-Za-z0-9_-]{0,7}'
 
 
+def _gen_slot(root, tpl, man, fxid):
+    """Slot of an FXID in a manifest's generated range (17..216), else None."""
+    import json
+    g = json.loads((root / 'tools' / tpl / man).read_text()).get('generated')
+    slot = fxid - g['fxid_offset'] if g else 0
+    return slot if g and g['first'] <= slot <= g['last'] else None
+
+
 def _nam_slot_of(root, fxid):
-    """Capture slot of a NAM FXID (1-8: 900-907, 9-16: 950-957), from the loader's manifest."""
+    """Capture slot of a NAM FXID (1-8: 900-907, 9-16: 950-957, 17-216: 500-699),
+    from the loader's manifest."""
     import json
     slots = json.loads((root / 'tools' / 'nam_template' / 'multi.json').read_text())['slots']
-    return next((s['slot'] for s in slots if s['fxid'] == fxid), None)
+    return next((s['slot'] for s in slots if s['fxid'] == fxid), None) or _gen_slot(root, 'nam_template', 'multi.json', fxid)
 
 
 def _embedded_name(path):
@@ -74,12 +83,15 @@ def apply_local_cab_names(entries, root):
         if path.suffix.lower() != '.zdl':
             continue
         effect = parse_zdl(path)
-        if not (effect and effect['gid'] == 8 and 930 <= effect['fxid'] <= 1028):
+        if not (effect and effect['gid'] == 8):
+            continue
+        slot = effect['fxid'] - 929 if 930 <= effect['fxid'] <= 945 else _gen_slot(root, 'cab_template', 'cab.json', effect['fxid'])
+        if not slot:
             continue
         label = _embedded_name(path)
         short = label[4:] if label.startswith('CAB-') else label     # e.g. the COSTnnn probes
         if re.fullmatch(SHORT, short):
-            names[effect['fxid'] - 929] = short
+            names[slot] = short
     for effect in entries:
         slot = effect.get('cabSlot')
         if slot and slot in names:

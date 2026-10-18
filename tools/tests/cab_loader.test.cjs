@@ -54,7 +54,8 @@ test('slot writer: only coefficient and name bytes change; template and cab chec
  for(const slot of [1,manifest.slots.length]){
   const s=manifest.slots[slot-1],template=tpl(slot),{bytes,report}=await C.fillCab(template,manifest,slot,cab,'synth');
   assert.equal(report.filename,C.fileName(slot,'synth'));assert.equal(report.fxid,929+slot);
-  const allowed=i=>(i>=s.fir_offset&&i<s.fir_offset+4*32)||(i>=s.sos_offset&&i<s.sos_offset+20*6)||(i>=s.gain_offset&&i<s.gain_offset+4)||(i>=s.name_offset&&i<s.name_offset+12);
+  const allowed=i=>(i>=s.fir_offset&&i<s.fir_offset+4*32)||(i>=s.sos_offset&&i<s.sos_offset+20*6)||(i>=s.gain_offset&&i<s.gain_offset+4)||(i>=s.name_offset&&i<s.name_offset+12)
+   ||(i>=s.picture_offset&&i<s.picture_offset+manifest.cover.capacity);
   for(let i=0;i<template.length;i++)if(!allowed(i))assert.equal(bytes[i],template[i],`slot ${slot} byte ${i} changed`);
   const v=new DataView(bytes.buffer);assert.equal(v.getFloat32(s.fir_offset,true),Math.fround(r.fir[0]));assert.equal(v.getFloat32(s.gain_offset,true),Math.fround(r.gain));
   assert.equal(Buffer.from(bytes.slice(s.name_offset,s.name_offset+12)).toString().replace(/\0/g,''),'CAB-synth');

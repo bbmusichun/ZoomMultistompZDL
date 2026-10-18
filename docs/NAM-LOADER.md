@@ -62,6 +62,20 @@ added last.
 > estimates, not measured CPU usage or a guarantee against crackling while
 > turning controls. Re-export and reinstall captures to use the current costs.
 >
+> **216 slots, your icon and name on the pedal screen (2026-10-16).** Slots
+> 17-216 for captures are FXIDs 500-699 and for cabs 700-899 (1-16 are
+> unchanged). They are made in the browser from one base template per engine
+> (`tools/slot_identity.js`): a slot differs from another only in its FXID, the
+> slot digits in its name and the ELF hash table those names feed, and the
+> tests check generated slots against linker-built ones byte for byte. Every
+> template now reserves 1,024 bytes for the cover, which the loader fills with
+> the chosen icon and name (`tools/cover_art.js`); the Effect Manager
+> thumbnail is drawn from the same picture. Re-export a capture to get its
+> name and icon on screen; older files keep working as they are. Filenames:
+> `NAM<slot><name>` with 4/3/2 name letters for slots 1-9/10-99/100-216;
+> cabs `C<slot><name>` with 5 letters, 4 from slot 100. Cab names must now
+> start with a letter.
+>
 > **16 capture slots (2026-10-06).** Slots 1-8 keep FXIDs 900-907; slots 9-16
 > are 950-957 (908-913 were the retired CabIR bank and NAM test effects).
 > Files `NAM<slot><name>` (4 name characters for slots 1-9, 3 for 10-16, e.g.
@@ -107,7 +121,7 @@ added last.
 
 The same page has a **Cabinets** section. Each cab IR WAV (44.1/48 kHz, up to
 2 s) is fitted in the browser to a 32-tap FIR + 6 filters and becomes **its own
-CabIR effect**, like a NAM capture: up to 16 slots (FXID 930-945), files
+CabIR effect**, like a NAM capture: up to 216 slots (FXID 930-945, then 700-899), files
 `C<slot><name>.ZDL` (e.g. `C01sm57.ZDL`), pedal name `CAB-<name>`, picked
 from the slot's effect list -- no Cab knob. A cab keeps its slot; removing one
 frees the slot for the next. Download one cab or all; install with Effect
@@ -137,7 +151,7 @@ Patch Editor's DSP meter adds the chain up before you write it. How the full rat
 
 ## Capture slots and names
 
-Sixteen independent identities are reserved (FXIDs 900–907 and 950–957, Delay group). These
+216 independent identities are reserved (FXIDs 900–907, 950–957 and 500–699, Delay group). These
 were checked against the current stock, custom, legacy and probe database and
 source manifests. Original NAMLite (498) is unchanged. Merely renaming a file
 would not create another effect; each slot has its own ID and DLL identity.
@@ -153,7 +167,7 @@ Names and occupancy are stored in this browser at this address. Keep the same
 browser and URL (localhost and 127.0.0.1 are different origins). Browser storage
 is not a pedal inventory. Another browser/computer or cleared storage cannot
 know your occupied slots: use saved capture notes before choosing a slot. PE
-recognizes all sixteen IDs even without these names, as generic numbered captures.
+recognizes every slot ID even without these names, as generic numbered captures.
 It updates names when returning from the loader or receiving a storage update.
 
 This enables keeping several captures installed, not a guarantee that multiple

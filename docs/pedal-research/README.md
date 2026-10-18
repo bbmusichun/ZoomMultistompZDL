@@ -54,6 +54,7 @@ older G3/G5/B3 need firmware patching nobody has done.
 - [zd2-other.md](zd2-other.md): Four series, G3n/G5n/B3n, AC-2/AC-3, G6/G11/B6
 - [zfx4-originals.md](zfx4-originals.md): original G3, G3X, G5, B3, A3
 - [demand.md](demand.md): who has asked, and what they reported
+- [animated-covers.md](animated-covers.md): animating an effect's screen, and a live oscilloscope
 
 Related: [PROBING-A-NEW-PEDAL.md](../PROBING-A-NEW-PEDAL.md) (safe checks for an
 unknown pedal), [ZD2-PORT-NOTES.md](../ZD2-PORT-NOTES.md) (the port plan),

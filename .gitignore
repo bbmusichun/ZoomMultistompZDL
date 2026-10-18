@@ -69,4 +69,32 @@ dist/Scrub.ZDL
 dist/Sweep.ZDL
 dist/SyncEQ.ZDL
 dist/WaveFold.ZDL
+dist/Breather.png
+dist/Choral.png
+dist/DirtBox.png
+dist/DualShft.png
+dist/DubSiren.png
+dist/EuGate.png
+dist/GridDly.png
+dist/SGNL.png
+dist/Scrub.png
+dist/Sweep.png
+dist/SyncEQ.png
+dist/WaveFold.png
 dist/matujuice/
+# Redraw probe (test A, docs/pedal-research/animated-covers.md): staged for upload, never shipped
+dist/Redraw.ZDL
+dist/Redraw.png
+# CoverRW probe (test C): staged for upload, never shipped
+dist/CoverRW.ZDL
+dist/CoverRW.png
+# Blink probe (test D): staged for upload, never shipped
+dist/Blink.ZDL
+dist/Blink.png
+# Scope: experimental (MS-70CDR 2.10 firmware calls), not shipped until hardware-tested
+dist/Scope.ZDL
+dist/Scope.png
+dist/Ring.ZDL
+dist/Ring.png
+dist/Skull.ZDL
+dist/Skull.png

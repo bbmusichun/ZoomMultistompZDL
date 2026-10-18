@@ -1,6 +1,6 @@
 # Zoom MultiStomp ZDL
 
-<p align="center"><img src="graphics/13-ivory-console-film.png" width="900" alt="A Zoom MS-70CDR mounted in a vintage lab console, running the browser patch editor"></p>
+<p align="center"><img src="graphics/14-console-dithered.png" width="900" alt="A Zoom MS-70CDR mounted in a vintage lab console, drawn in 1-bit dither like the pedal screen"></p>
 
 Custom `.ZDL` effects for Zoom MultiStomp pedals, plus the reverse-engineered
 toolchain used to build them — no Zoom SDK required.
@@ -57,18 +57,25 @@ compiler, nothing uploaded anywhere.
 
 1. Open the [NAM + Cab Loader](tools/nam_loader.html) (Patch Editor
    **Settings → Custom NAM captures**, with the local editor running).
-2. **Amp:** drop in an A2 Lite `.nam` file, give it a short name, pick a slot,
-   download the `.ZDL`. Tick **Eco** if you want it lighter on the DSP (see below).
+2. **Amp:** drop in an A2 Lite `.nam` file, give it a short name, pick an
+   icon and a slot, download the `.ZDL` and its thumbnail. Tick **Eco** if you
+   want it lighter on the DSP (see below).
 3. **Cab:** drop in an IR `.wav` (44.1 or 48 kHz). The loader fits it to a
-   small filter the pedal can afford and gives you a `.ZDL`.
+   small filter the pedal can afford and gives you a `.ZDL`; pick an icon per
+   cab.
 4. Install the files with Zoom Effect Manager. They appear in Patch Editor
    under the names you chose, as `NAM-<name>` and `CAB-<name>` on the pedal.
 
-**Slots.** 16 amp slots and 16 cab slots, each with its own effect ID, so you
-can keep several installed side by side. Putting a new capture in a used slot
-replaces the old one (patches that used that slot pick up the new sound).
-Filenames encode the slot so they never collide: `NAM4smok.ZDL`,
-`C01sm57.ZDL`. Names must start with a letter.
+**Slots.** 216 amp slots and 216 cab slots, each with its own effect ID, so
+you can keep as many installed side by side as the pedal's storage holds (each
+file is ~30 KB for a capture, ~16 KB for a cab). Putting a new capture in a
+used slot replaces the old one (patches that used that slot pick up the new
+sound). Filenames encode the slot so they never collide: `NAM4smok.ZDL`,
+`NAM150sm.ZDL`, `C01sm57.ZDL`, `C150sm5.ZDL`. Names must start with a letter.
+
+**Your name and icon on the pedal.** Each file's pedal-screen picture shows the
+name you typed and one of 21 icons (amp, cab, speaker, tube, mic, skull,
+flame…); the Effect Manager thumbnail the loader gives you matches it.
 
 **Knobs.**
 
@@ -441,6 +448,9 @@ deep versions live in [docs/](docs/) and [build/ABI.md](build/ABI.md).
 - gid ↔ category must match the exported symbol prefix
   (1=DYN, 2=FLT, 3=DRV, 6=CHO/MOD, 8=DLY, 9=REV); everything here is gid 8
   (`Fx_DLY_*`) so the pack lives together in the least crowded menu.
+- **Reserved effect IDs** (Delay group; FXIDs go up to 1023): this pack
+  403–499, NAM captures 900–907, 950–957 and 500–699, CabIR cabs 930–945 and
+  700–899. Other projects building effects for these pedals: please avoid them.
 
 ## Build Your Own Effects
 
@@ -544,6 +554,7 @@ them beside the repo, treat them as read-only references.
 
 | Doc | What it covers |
 |---|---|
+| [CHANGELOG.md](CHANGELOG.md) | What changed, newest first. |
 | [HANDOFF.md](HANDOFF.md) | **Start here** if you are picking this project up: current state, how to test, and what has already been ruled out. |
 | [docs/PARAM-INIT-INVESTIGATION.md](docs/PARAM-INIT-INVESTIGATION.md) | How the param-materialization bug was actually diagnosed — unrelocated absolute call targets — and the firmware tracing behind it. |
 | [docs/RELEASE-INIT-AUDIT.md](docs/RELEASE-INIT-AUDIT.md) | Rolling the fix out across all 22 effects, plus four follow-up defects found in the audit. |

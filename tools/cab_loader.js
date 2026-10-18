@@ -7,6 +7,8 @@
  * change; the audio code and its relocations are never touched. */
 (function(root){
 'use strict';
+const SlotIdentity=typeof module!=='undefined'?require('./slot_identity.js'):root.SlotIdentity;
+const CoverArt=typeof module!=='undefined'?require('./cover_art.js'):root.CoverArt;
 const FS=44100,NFFT=1<<15,TAPS=32,PEAKS=4,NBQ=2+PEAKS;
 function need(ok,message){if(!ok)throw Error(message);}
 
@@ -159,15 +161,23 @@ async function sha256(bytes){return Array.from(new Uint8Array(await crypto.subtl
 function checkCab(c,m){need(c&&Array.isArray(c.fir)&&c.fir.length===m.taps&&Array.isArray(c.sos)&&c.sos.length===m.biquads&&c.sos.every(r=>Array.isArray(r)&&r.length===5)&&Number.isFinite(c.gain),'Invalid cab data.');
  need([...c.fir,...c.sos.flat(),c.gain].every(v=>Number.isFinite(v)&&Number.isFinite(Math.fround(v))),'Cab coefficients out of range.');
  for(const [,, ,a1,a2] of c.sos){const f1=Math.fround(a1),f2=Math.fround(a2);need(Math.abs(f2)<1&&Math.abs(f1)<1+f2,'Unstable cab filter.');}}
-function cabName(value){const name=String(value).trim();need(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,7}$/.test(name),'Use 1-8 letters, numbers, hyphens or underscores for the cab name.');return name;}
-// C<2-digit slot><up to 5 chars of name>.ZDL -- at most 8 characters and unique
-// per slot: the pedal truncates basenames to 8 and freezes on duplicates.
+// Starts with a letter (as NAM names): from slot 100 the slot takes three
+// digits, so 'C10' + '0abc' must never read as slot 100's 'C100abc'.
+function cabName(value){const name=String(value).trim();need(/^[a-zA-Z][a-zA-Z0-9_-]{0,7}$/.test(name),'Use 1-8 letters, numbers, hyphens or underscores for the cab name, starting with a letter.');return name;}
 // The pedal shows at most 9 characters (stock names); 'CAB-' + 8 broke its screen (issue #5).
 function pedalName(name){return 'CAB-'+cabName(name).slice(0,5);}
-function fileName(slot,name){return 'C'+String(slot).padStart(2,'0')+cabName(name).slice(0,5)+'.ZDL';}
-async function fillCab(template,manifest,slot,cab,name){
+// C<2-digit slot><up to 5 chars of name>.ZDL, and C<3-digit slot><4 chars>
+// from slot 100 -- at most 8 characters and unique per slot: the pedal
+// truncates basenames to 8 and freezes on duplicates.
+function fileName(slot,name){return 'C'+String(slot).padStart(2,'0')+cabName(name).slice(0,slot<100?5:4)+'.ZDL';}
+// Cab slots: 1-16 are FXID 930-945 (shipped templates), 17-216 are 700-899,
+// made from one base template (slot_identity.js). IDs are permanent.
+function cabFxid(slot){return slot<=16?929+slot:683+slot;}
+async function fillCab(template,manifest,slot,cab,name,icon){
  need(manifest.format===2&&manifest.taps===TAPS&&manifest.biquads===NBQ&&Array.isArray(manifest.slots),'Unsupported cab engine template.');
- const s=manifest.slots.find(x=>x.slot===slot);need(s,'No such cab slot.');
+ let s;try{s=SlotIdentity.slotMeta(manifest,slot);}catch{s=null;}need(s&&s.fxid===cabFxid(slot),'No such cab slot.');
+ // Slots past the shipped templates: `template` is the shared base; make this slot from it.
+ if(s.generated){template=await SlotIdentity.generateSlot(template,manifest,slot,sha256);s={...s,bytes:template.length,sha256:await sha256(template)};}
  const original=new Uint8Array(template);
  need(original.length===s.bytes&&await sha256(original)===s.sha256,'The cab engine template is damaged or outdated. Reload the page.');
  const {fir_offset:fo,sos_offset:so,gain_offset:go,name_offset:no}=s,t=manifest.taps,b=manifest.biquads;
@@ -178,7 +188,8 @@ async function fillCab(template,manifest,slot,cab,name){
  cab.sos.forEach((r,j)=>r.forEach((x,k)=>v.setFloat32(so+4*(5*j+k),x,true)));
  v.setFloat32(go,cab.gain,true);
  out.fill(0,no,no+12);out.set(new TextEncoder().encode(pedalName(name)),no);
- return {bytes:out,report:{engine:manifest.engine,version:manifest.output_version,slot,fxid:s.fxid,filename:fileName(slot,name),
+ if(manifest.cover){icon=icon||manifest.cover.default_icon;CoverArt.writeCover(out,s,manifest.cover,name,icon);}
+ return {bytes:out,report:{engine:manifest.engine,version:manifest.output_version,slot,fxid:s.fxid,icon:icon||null,filename:fileName(slot,name),
   displayName:pedalName(name),name:'CabIR-'+name,source:cab.source||'',fitRmsDb:cab.errorDb,fitWorstDb:cab.worstDb,sha256:await sha256(out),engineSha256:s.sha256}};
 }
 // The browser's cabs: each keeps its slot for life (removing frees it; the
@@ -188,6 +199,6 @@ function readCabs(storage){try{const b=JSON.parse(storage.getItem(CABS_KEY)||'[]
 function saveCabs(storage,cabs){storage.setItem(CABS_KEY,JSON.stringify(cabs));}
 function freeSlot(cabs,max){for(let s=1;s<=max;s++)if(!cabs.some(c=>c.slot===s))return s;return 0;}
 
-const api={parseWav,resample48,prepare,fit,fillCab,fileName,cabName,pedalName,responseDb,peak,lowpass,highpass,readCabs,saveCabs,freeSlot,CABS_KEY,TAPS,NBQ};
+const api={parseWav,resample48,prepare,fit,fillCab,fileName,cabFxid,cabName,pedalName,responseDb,peak,lowpass,highpass,readCabs,saveCabs,freeSlot,CABS_KEY,TAPS,NBQ};
 if(typeof module!=='undefined')module.exports=api;else root.CabLoader=api;
 })(globalThis);

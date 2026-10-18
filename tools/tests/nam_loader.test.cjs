@@ -42,7 +42,8 @@ test('eight distinct named exports preserve DSP, linkage and original NAM identi
   assert.notEqual(r.report.fxid,498);identities.add(r.report.id);
   const end=r.bytes.slice(slot.name_offset,slot.name_offset+12);
   assert.equal(Buffer.from(end).toString().replace(/\0/g,''),'NAM-smoke');
-  const allowed=i=>(i>=slot.weights_offset&&i<slot.weights_offset+1871*4)||(i>=68&&i<76)||(i>=slot.name_offset&&i<slot.name_offset+12);
+  const allowed=i=>(i>=slot.weights_offset&&i<slot.weights_offset+1871*4)||(i>=68&&i<76)||(i>=slot.name_offset&&i<slot.name_offset+12)
+   ||(i>=slot.picture_offset&&i<slot.picture_offset+multi.cover.capacity);
   for(let i=0;i<engine.length;i++)if(!allowed(i))assert.equal(r.bytes[i],engine[i]);
  }
  assert.equal(identities.size,16);assert.equal(multi.slots.length,16);

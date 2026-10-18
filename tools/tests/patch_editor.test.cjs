@@ -9,7 +9,7 @@ test('capture sync restores original DSP costs when saved overrides disappear or
   let saved=[{slot:1,shortName:'eco',cost:160}];
   const e={namSlot:1,name:'NAMLite-original',captureName:'original',cost:baseline};
   const c=context({DB:{custom:[e]},localStorage:{getItem:k=>k==='namlite-captures-v1'?JSON.stringify(saved):'[]'}});
-  vm.runInContext(src.split('\n').find(l=>l.startsWith('const NAM_BASE_COSTS='))+'\n'+fn('syncNamCaptureNames'),c);
+  vm.runInContext(['const NAM_BASE_COVERS=','let COVER_BLOCKS=','const NAM_BASE_COSTS='].map(k=>src.split('\n').find(l=>l.startsWith(k))).join('\n')+'\n'+fn('coverB64')+'\n'+fn('syncNamCaptureNames'),c);
   assert.equal(c.syncNamCaptureNames(),true);assert.equal(e.cost,160);
   saved=[];assert.equal(c.syncNamCaptureNames(),true);
   assert.equal(e.cost,baseline);assert.equal(e.name,'NAMLite-original');
@@ -241,4 +241,18 @@ test('a write the sibling pedal does not keep locks writes again; MS-70CDR is un
  const s=siblingContext(d=>d);s.c.READ_ONLY=false;s.c.WRITE_TRIAL=true;s.c.lockSiblingWrites('test');
  assert.equal(s.c.READ_ONLY,true);assert.equal(s.c.WRITE_TRIAL,false);
  const m=siblingContext(d=>d);m.c.DEVID=0x61;m.c.READ_ONLY=false;m.c.lockSiblingWrites('test');assert.equal(m.c.READ_ONLY,false);
+});
+
+test('capture pictures follow the loader name and icon, and fall back to the DB picture',()=>{
+ const A=require('../cover_art.js'),cover=JSON.parse(fs.readFileSync(require('node:path').join(__dirname,'../nam_template/multi.json'))).cover;
+ let saved=[{slot:1,shortName:'smokey',icon:'skull',cost:194}];
+ const e={namSlot:1,id:7,name:'NAMLite — capture 1',cost:194,cover:'DBPIC'};
+ const c=context({DB:{custom:[e]},CoverArt:A,btoa:s=>Buffer.from(s,'binary').toString('base64'),
+  localStorage:{getItem:k=>k==='namlite-captures-v1'?JSON.stringify(saved):'[]'}});
+ vm.runInContext(['const NAM_BASE_COVERS=','let COVER_BLOCKS=','const NAM_BASE_COSTS='].map(k=>src.split('\n').find(l=>l.startsWith(k))).join('\n')+'\n'+fn('coverB64')+'\n'+fn('syncNamCaptureNames')+'\nthis.setBlocks=b=>{COVER_BLOCKS=b;};',c);
+ c.syncNamCaptureNames();assert.equal(e.cover,'DBPIC','no manifest yet: DB picture');
+ c.setBlocks({nam:cover});c.syncNamCaptureNames();
+ const px=A.draw(cover,'smokey','skull'),b=Buffer.alloc(1024);px.forEach((v,i)=>{if(v)b[i>>3]|=0x80>>(i&7);});
+ assert.equal(e.cover,b.toString('base64'));
+ saved=[];c.syncNamCaptureNames();assert.equal(e.cover,'DBPIC','record gone: DB picture back');
 });

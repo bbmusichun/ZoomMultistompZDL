@@ -485,6 +485,7 @@ class ObjFile:
                         # this, calls land early by their original section
                         # offset after we move .text/.audio in the final ZDL.
                         'addend': offset if rtype == RT_PCR_S21 else 0,
+                        'implicit': True,
                     })
             if entries:
                 self.relocs.setdefault(target_idx, []).extend(entries)
@@ -1402,6 +1403,19 @@ def link(cfg: LinkerConfig) -> None:
     if coe_sym_name in undefined:
         sym_addr[undefined[coe_sym_name]] = COE_VA
 
+    # Same for the cover picture (the RLE blob at the start of .const): a probe
+    # that declares `extern unsigned char _<audio>_Pic[]` gets its runtime
+    # address (src/hardware_probes/coverrw, docs/pedal-research/animated-covers.md).
+    pic_sym_name = f"_{cfg.audio_func_name}_Pic"
+    if pic_sym_name in undefined:
+        sym_addr[undefined[pic_sym_name]] = PIC_VA
+    # And imageInfo (128x64 header, picture pointer at word 5, control positions):
+    # the firmware re-reads it on every redraw, so an effect can point word 5 at
+    # frames it draws itself (src/custom/scope; Leemuzhko SDK EFFECT_UI_WRITES).
+    info_sym_name = f"_{cfg.audio_func_name}_Info"
+    if info_sym_name in undefined:
+        sym_addr[undefined[info_sym_name]] = INFO_VA
+
     # Compiler-emitted register save/restore helpers — resolve to the
     # spliced LineSel copies if present.  Without these, any moderately
     # complex audio function (anything that spills to stack) would link
@@ -1446,6 +1460,23 @@ def link(cfg: LinkerConfig) -> None:
             # real target by exactly the instruction's section offset, which
             # froze the pedal on InitProbe stage 2.
             addend = rel['addend'] if sym['shndx'] != 0 else 0
+            # ...but only within the same section. A REL CALLP to a function in
+            # ANOTHER section (e.g. .audio calling a helper in .text) carries no
+            # section-start displacement: its placeholder is zero and adding the
+            # instruction offset lands the call that many bytes past the target.
+            # That froze the pedal on the Blink probe's first callback (call at
+            # .audio+0x80 went to firmware_ok+0x80). Rule and TI cross-check:
+            # Leemuzhko/ZOOM_development SDK/LINKER_AND_BUILD.md, "Cross-section
+            # REL/PCR_S21 rule". A nonzero cross-section placeholder is not
+            # understood, so refuse it.
+            if (rtype == RT_PCR_S21 and rel.get('implicit') and sym['shndx'] != 0
+                    and sym['shndx'] != sec['idx']):
+                placeholder = (struct.unpack_from('<I', sec['data'], offset)[0] >> 7) & 0x1FFFFF
+                if placeholder:
+                    raise RuntimeError(
+                        f"cross-section CALLP at {sec['name']}+0x{offset:X} to {sym['name']!r} has a "
+                        f"nonzero placeholder (0x{placeholder:X}); not supported")
+                addend = 0
             target = sym_addr[rel['sym_idx']] + addend
             file_off = base_off + offset
             if rtype == RT_ABS_L16:

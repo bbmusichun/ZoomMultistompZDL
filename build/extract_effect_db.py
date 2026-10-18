@@ -224,7 +224,9 @@ def main() -> None:
                 e['params'] = staged['params']
             if staged and staged.get('cost'):
                 e['cost'] = staged['cost']     # e.g. an Eco build staged in dist/ declares less
-            e.update(name=f'NAMLite — capture {slot}', namSlot=slot, cover=_cover_b64(template))
+            # A staged file's own picture (its name and icon), else the template's.
+            e.update(name=f'NAMLite — capture {slot}', namSlot=slot,
+                     cover=(staged or {}).get('cover') or _cover_b64(template))
             db['custom'].append(e)
 
     # Reserved CabIR slots: one cab per effect (FXID 930..), built by the
@@ -238,8 +240,28 @@ def main() -> None:
             group[:] = [x for x in group if x['id'] != e['id']]
         if staged and staged.get('cost'):
             e['cost'] = staged['cost']         # the dist/ file's declared cost (e.g. COSTnnn probes)
-        e.update(name=f'CabIR — slot {slot}', cabSlot=slot, cover=_cover_b64(template))
+        e.update(name=f'CabIR — slot {slot}', cabSlot=slot,
+                 cover=(staged or {}).get('cover') or _cover_b64(template))
         db['custom'].append(e)
+
+    # Slots 17..216 (NAM FXID 500-699, CabIR 700-899) are made in the browser
+    # from one base template each; PE expands them from this rule instead of
+    # 400 near-identical entries. A file staged in dist/ for one of them
+    # becomes that slot's entry (its own knobs, cost and embedded name).
+    gens = {}
+    for kind, key, tpl, man_name, label in (('nam', 'namSlot', 'nam_template', 'multi.json', 'NAMLite — capture {}'),
+                                            ('cab', 'cabSlot', 'cab_template', 'cab.json', 'CabIR — slot {}')):
+        g = json.loads((ROOT / 'tools' / tpl / man_name).read_text()).get('generated')
+        if not g:
+            continue
+        gens[kind] = dict(first=g['first'], last=g['last'], fxidOffset=g['fxid_offset'], key=key, proto=1,
+                          label=label.replace('{}', '%d'))
+        for e in db['custom']:
+            slot = e['fxid'] - g['fxid_offset']
+            if e['gid'] == 8 and g['first'] <= slot <= g['last'] and not e.get(key):
+                e.update(name=label.format(slot), **{key: slot})
+    if gens:
+        db['generated'] = gens
 
     from nam_capture_names import apply_local_names, apply_local_cab_names
     if not public:
