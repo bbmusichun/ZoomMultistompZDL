@@ -30,8 +30,10 @@ def decode(buf):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("effect", type=Path); ap.add_argument("out", type=Path)
-    ap.add_argument("--knobs", default=""); ap.add_argument("--signal", default="sine")
+    ap.add_argument("--knobs", default=""); ap.add_argument("--signal", default="sine", help="sine, stereo, pluck, silence, or a .f32 file")
     ap.add_argument("--seconds", type=float, default=2.0); ap.add_argument("--frames", type=int, default=4)
+    ap.add_argument("--arena-kb", type=int, default=128, help="the effect's memory (the pedal gives ~689)")
+    ap.add_argument("--presses", default="", help="seconds at which the footswitch flips the effect on/off, e.g. 0.5,2.5")
     a = ap.parse_args()
     m = json.loads((a.effect / "manifest.json").read_text())
     name, audio = m["effect_name"], m["audio_func_name"]
@@ -46,8 +48,8 @@ def main():
         lib = C.CDLL(str(so))
         fn = getattr(lib, audio); fn.argtypes = [C.POINTER(C.c_size_t)]
         info = (C.c_uint * 64).in_dll(lib, f"_{audio}_Info")
-        arena = (C.c_uint8 * (128 << 10))(); base = C.addressof(arena)
-        desc = (C.c_size_t * 2)(base, base + (128 << 10))
+        arena = (C.c_uint8 * (a.arena_kb << 10))(); base = C.addressof(arena)
+        desc = (C.c_size_t * 2)(base, base + (a.arena_kb << 10))
         knobs = [float(v) / 100 for v in a.knobs.split(",")] if a.knobs else [p["default"] / 100 for p in m["params"]]
         params = (C.c_float * 16)(1, 0, 0, 0, 0, *knobs)
         fx = (C.c_float * 16)(); src = C.c_uint(7); dst = C.c_uint(); dp = C.c_size_t(C.addressof(dst))
@@ -57,10 +59,20 @@ def main():
         ctx[0] = 0
         frames, last, t = [], info[5], 0
         n = int(a.seconds * 44100 / 8)
+        wav = None
+        if a.signal.endswith(".f32"):          # mono float32 samples, e.g. the emulator's test signal
+            import array
+            wav = array.array("f"); wav.frombytes(Path(a.signal).read_bytes())
+            n = min(n, len(wav) // 8)
+        presses = {int(float(v) * 44100) // 8 for v in a.presses.split(",") if v}
         for blk in range(n):
+            if blk in presses:
+                params[0] = 0.0 if params[0] > 0.5 else 1.0
             for j in range(8):
                 tt = t / 44100
-                if a.signal == "sine":
+                if wav is not None:
+                    l = r = wav[t]
+                elif a.signal == "sine":
                     l = r = 0.4 * math.sin(2 * math.pi * 196 * tt)
                 elif a.signal == "stereo":
                     l, r = 0.4 * math.sin(2 * math.pi * 196 * tt), 0.4 * math.sin(2 * math.pi * 294 * tt)
@@ -73,7 +85,7 @@ def main():
                 fx[j], fx[j + 8] = l, r; t += 1
             before = list(fx)
             fn(ctx)
-            assert list(fx) == before, "audio changed"
+            assert a.presses or list(fx) == before, "audio changed"   # a looper changes it, by design
             if info[5] != last:
                 last = info[5]
                 frames.append(bytes((C.c_uint8 * 1544).from_address((base & ~0xFFFFFFFF) | last)))

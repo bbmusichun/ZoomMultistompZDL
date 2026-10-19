@@ -4,6 +4,30 @@ What changed, newest first. The project has no version numbers; entries are
 dated. Effects in [dist/](dist/) carry their own version in the file
 (shown in Zoom Effect Manager).
 
+## 2026-10-19
+
+### NAM + Cab Loader
+- **Frequency response**: the capture's EQ curve at three playing levels,
+  through any cab in your bank, or a cab's IR against its pedal filter; 48 kHz
+  captures can be shown as trained. Measured in the browser
+  (`tools/nam_response.js`, matched to the validated C kernel).
+
+### Visual effects (experimental, MS-70CDR firmware 2.10)
+- **Skull v0.04**: idle animations when it's quiet (looks around, spins, a
+  snake through the eye sockets and mouth, rolls, melts into dust); a more
+  violent explosion of shards cut from its own picture.
+- **Spectrum** (FXID 468): a live spectrum analyzer, 1024-point FFT, 126 bars
+  40 Hz - 16 kHz with peak hold; Range, Fall and Tilt.
+
+### Loop
+- **Loop** (FXID 467): a looper on stock firmware; works on the pedal. The
+  footswitch records, plays and overdubs; a double press stops, and a double
+  press when stopped clears. Undo and redo of the last overdub; mono, 12-bit,
+  ~5 s (Long: ~23 s in RAM MIDISTOMP found unused on 2.10, experimental). Its
+  screen shows the state, the time and the loop's waveform with a playhead.
+  Guide: [src/custom/loop/README.md](src/custom/loop/README.md).
+- README: a section for the looper and the live screen effects.
+
 ## 2026-10-18
 
 ### NAM + Cab Loader

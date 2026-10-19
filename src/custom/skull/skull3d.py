@@ -48,6 +48,9 @@ def skull(p, jaw=0.0):
     ps = np.concatenate([x, p[..., 1:]], -1)                   # mirror for symmetric parts
     d = ellipsoid(p, np.array([0, 0.18, -0.05]), np.array([0.47, 0.47, 0.56]))       # cranium
     d = smin(d, rbox(p, np.array([0, -0.2, 0.22]), np.array([0.25, 0.17, 0.2]), 0.08), 0.12)   # face
+    base = smin(ellipsoid(p, np.array([0, -0.1, -0.22]), np.array([0.36, 0.26, 0.34])),       # skull base: no
+                ellipsoid(ps, np.array([0.3, -0.24, -0.1]), np.array([0.07, 0.1, 0.08])), 0.08)  # overhang side on
+    d = smin(d, base, 0.1)
     d = smin(d, ellipsoid(ps, np.array([0.3, -0.12, 0.2]), np.array([0.1, 0.075, 0.16])), 0.06)  # cheekbones
     d = smax(d, -ellipsoid(ps, np.array([0.47, -0.02, 0.05]), np.array([0.08, 0.16, 0.2])), 0.05)  # temples
     d = smax(d, -ellipsoid(ps, np.array([0.17, -0.03, 0.40]), np.array([0.135, 0.12, 0.24])), 0.03)  # eye sockets
@@ -76,16 +79,30 @@ def skull(p, jaw=0.0):
     return np.minimum(d, mand)
 
 
-def render(w=128, h=45, jaw=0.0, yaw=0.45, pitch=0.15, scale=0.0245, cx=64, cy=21):
-    """Grey image (0 = black, 1 = white bone) of the skull, w x h pedal pixels."""
-    ys, xs = np.mgrid[0:h, 0:w].astype(float)
-    u = (xs - cx) * scale
-    v = -(ys - cy) * scale * ASPECT
+def _camera(yaw, pitch):
     cyw, syw, cp, sp = np.cos(yaw), np.sin(yaw), np.cos(pitch), np.sin(pitch)
-    # orthographic camera turned by yaw (around y) and pitch (around x)
     right = np.array([cyw, 0, -syw])
     up = np.array([syw * sp, cp, cyw * sp])
     fwd = np.array([-syw * cp, sp, -cyw * cp])
+    return right, up, fwd
+
+
+# The lamp sits with the camera: upper left of the three-quarter view (yaw 0.45,
+# pitch 0.15), so the skull keeps its look when it turns, spins or rolls.
+_LAMP = np.array([-0.55, 0.6, 0.6]) / np.linalg.norm([-0.55, 0.6, 0.6])
+_LAMP_CAM = np.array([_LAMP @ a for a in _camera(0.45, 0.15)])
+
+
+def render(w=128, h=45, jaw=0.0, yaw=0.45, pitch=0.15, scale=0.0245, cx=64, cy=21, roll=0.0):
+    """Grey image (0 = black, 1 = white bone) of the skull, w x h pedal pixels.
+    roll turns the skull in the screen plane (radians, counter-clockwise)."""
+    ys, xs = np.mgrid[0:h, 0:w].astype(float)
+    u0 = (xs - cx) * scale
+    v0 = -(ys - cy) * scale * ASPECT
+    cr, sr = np.cos(roll), np.sin(roll)
+    u, v = u0 * cr + v0 * sr, -u0 * sr + v0 * cr
+    # orthographic camera turned by yaw (around y) and pitch (around x)
+    right, up, fwd = _camera(yaw, pitch)
     o = u[..., None] * right + v[..., None] * up - 2.0 * fwd
     t = np.zeros((h, w)); hit = np.zeros((h, w), bool)
     for _ in range(90):
@@ -101,7 +118,7 @@ def render(w=128, h=45, jaw=0.0, yaw=0.45, pitch=0.15, scale=0.0245, cx=64, cy=2
                   skull(p + np.array([0, e, 0]), jaw) - skull(p - np.array([0, e, 0]), jaw),
                   skull(p + np.array([0, 0, e]), jaw) - skull(p - np.array([0, 0, e]), jaw)], -1)
     n /= np.maximum(_len(n)[..., None], 1e-6)
-    light = np.array([-0.55, 0.6, 0.6]); light /= np.linalg.norm(light)
+    light = _LAMP_CAM[0] * right + _LAMP_CAM[1] * up + _LAMP_CAM[2] * fwd
     diff = np.clip((n * light).sum(-1), 0, 1)
     ao = np.ones((h, w))                          # cheap occlusion: sample along the normal
     for k in range(1, 5):

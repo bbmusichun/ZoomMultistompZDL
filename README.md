@@ -243,6 +243,24 @@ pedal actually shows.
 > subset, back up first, and flash one at a time. Run heavy effects (Microlm,
 > Galactic, Spool) one per patch.
 
+## Experimental: a looper and live screens
+
+These run on the stock MS-70CDR firmware. Their screens need firmware 2.10;
+on any other firmware they keep working as audio effects, and the screen
+effects simply pass the sound through.
+
+| Effect | What it does |
+|---|---|
+| **[Loop](src/custom/loop/README.md)** | A looper on the footswitch: record, play, overdub, stop, clear, with undo/redo. About 5 s, or about 23 s in experimental Long mode. Its screen shows the state, the time and the loop's waveform. |
+| **Scope** | A live oscilloscope of your signal on the effect's screen. |
+| **Spectrum** | A live spectrum analyzer, 40 Hz – 16 kHz, with peak hold. |
+| **Ring** | A rotating ring that follows the signal. |
+| **Skull** | A shaded 3D skull that reacts to your playing, idles with animations when you stop, and explodes at the loudest peaks. |
+
+They aren't in [dist/](dist/) yet: build them from `src/custom/<name>/build.py`.
+How an effect can animate its own screen is in
+[animated-covers.md](docs/pedal-research/animated-covers.md).
+
 ## Download Effects
 
 The ready-to-load effects are in [dist/](dist/). Point Zoom Effect Manager at

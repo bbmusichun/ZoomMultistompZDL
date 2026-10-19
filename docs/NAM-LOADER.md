@@ -128,6 +128,21 @@ frees the slot for the next. Download one cab or all; install with Effect
 Manager. Cost ~800 cycles (~5% of NAM). Details:
 `src/hardware_probes/cab_ir/README.md`.
 
+## Frequency response
+
+Below the capture, **Frequency response** plots how the capture shapes the
+tone, measured in the browser (`tools/nam_response.js`): the page runs the
+capture's network on pink noise at three input levels (−30, −18 and −6 dBFS
+RMS, soft to hard playing) and shows, for each, the part of the output that
+follows the input (H = Sxy/Sxx, 1/6 octave). The curves are levelled in the
+mids so their shapes compare; the legend gives each level's gain, so the
+compression shows too. Pick a cab from your bank to see the chain as the pedal
+plays it (the capture, then the cab's pedal filter); with no capture loaded,
+a cab shows its IR against that filter. A 48 kHz capture can also be shown as
+trained, next to the 44.1 kHz the pedal plays it at. The page's network
+matches the C kernel `tools/nam_prototype/generate.py` writes (checked
+against NAM Core) to 2e-7; the tone stack, gate and Eco are not included.
+
 ## Knobs
 
 | page | knobs |
