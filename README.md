@@ -112,9 +112,9 @@ pedal will refuse it).
 **What works.** A2 Lite captures only (the small standard NAM architecture).
 Larger NAM models don't fit this DSP. Captures trained at 48 kHz work, but
 retraining at 44.1 kHz (the pedal's rate) is closer to the real amp; we used
-NAM ReTrainer by Leemuzhko for
-that. The cab fit follows the Hybrid IR idea, also from
-[Leemuzhko](https://github.com/Leemuzhko/HYBRID-IR): a short filter plus a few
+NAM ReTrainer by Alexander Lim ([Leemuzhko](https://github.com/Leemuzhko)) for
+that. The cab fit follows his Hybrid IR idea
+([HYBRID-IR](https://github.com/Leemuzhko/HYBRID-IR)): a short filter plus a few
 EQ bands instead of a long IR, so a cab costs almost nothing.
 
 **Your captures stay yours.** `.nam` files, fitted cabs and the `.ZDL` files
@@ -339,7 +339,8 @@ their knobs are on the pedal's knob pages, as usual.
 
 They aren't in [dist/](dist/) yet: build them from `src/custom/<name>/build.py`.
 How an effect can animate its own screen is in
-[animated-covers.md](docs/pedal-research/animated-covers.md).
+[animated-covers.md](docs/pedal-research/animated-covers.md), built on Alexander
+Lim's ([Leemuzhko](https://github.com/Leemuzhko/ZOOM_development)) firmware notes.
 
 ## Download Effects
 
@@ -680,7 +681,8 @@ them beside the repo, treat them as read-only references.
 | [MIDISTOMP](https://github.com/matujuice/zoom-ms-midistomp) | Custom firmware for the original MultiStomps: MIDI Program Change, CC control of every knob, MIDI clock with Start/Stop, a tap-tempo screen and footswitch-hold options. Installed by flashing a modified Zoom updater (riskier than an Effect Manager install). Tested on an MS-60B running MS-50G 3.10; MS-50G and MS-70CDR untested. MIT. |
 | [Matujuice ZDL effects pack](https://github.com/matujuice/zoom-ms-zdl-effects-pack) | Luca Matturro's custom effects, built on this toolchain, made for synths and drum machines. v1.5 is [included here](#matujuice-effects-pack-included); v1.6 and later follow MIDISTOMP's tempo (120 BPM on stock firmware). MIT. |
 | [repeat98/ZoomMultistompZDL](https://github.com/repeat98/ZoomMultistompZDL) | The upstream ZDL toolchain this fork started from. |
-| [Leemuzhko/HYBRID-IR](https://github.com/Leemuzhko/HYBRID-IR) | The short-filter-plus-EQ cab idea behind CabIR. |
+| [Leemuzhko/ZOOM_development](https://github.com/Leemuzhko/ZOOM_development) | Alexander Lim's SDK notes and hardware results for the MS-70CDR. Much here rests on them: how an effect draws its own screen (the live screens and the zvis kit), the pedal's file-size cap and DSP limit, and linker pitfalls. The repo has no licence, so its findings are used here with credit, not its code. |
+| [Leemuzhko/HYBRID-IR](https://github.com/Leemuzhko/HYBRID-IR) | Alexander Lim's short-filter-plus-EQ cab idea behind CabIR. |
 | [Ziddle](https://berbasoft.com/ziddle/) | C674x emulator used to test ZDLs before they touch hardware. |
 | [r/zoommultistomp](https://www.reddit.com/r/zoommultistomp/) | Community subreddit for the MultiStomp pedals. |
 
