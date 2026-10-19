@@ -56,7 +56,7 @@ added last.
 > boot fine (with CabIR also installed).
 >
 > **Calibrated DSP estimates (2026-10-06).** Current captures declare full-rate
-> NAM 194, Eco 6/8 NAM 177, and CabIR 10. PE uses an approximate budget of 228;
+> NAM 194, Eco 6/8 NAM 177 (181 from 0.26; Eco+ 152), and CabIR 10. PE uses an approximate budget of 228;
 > hardware accepted a declared total of 224.4 and refused 228.4. These costs
 > help the pedal reject oversized chains with **DSP Full**, but are admission
 > estimates, not measured CPU usage or a guarantee against crackling while
@@ -83,6 +83,36 @@ added last.
 > collide with slots 10-16 on the pedal's 8-character names. Patch Editor lists
 > only the captures and cabs you have made (named via this browser's loader or
 > files in dist/), not the empty reserved slots.
+>
+> **Engine 0.26 (2026-10-19, hardware-tested the same day).** Three choices in the
+> loader: **Full rate** (194), **Eco** (181) and **Eco+** (152).
+> - Soft output limiter: exact below 0.75, then a smooth curve to full scale,
+>   instead of the hard clip at 1.0.
+> - Eco resamples with cubic curves at evenly spaced positions. Its spurs went
+>   from -23 dB to -53 dB at 3 kHz.
+> - Eco+ runs the model at half rate. The page measures the capture at full
+>   rate and at half rate, at three playing levels (`nam_response.js`
+>   `fitEcoEq`), fits a high shelf and two peaks, and writes them into the
+>   file. In the emulator: medium playing within ±1 dB of full rate up to
+>   5 kHz, soft and hard playing within ±2.8 dB, 24% fewer cycles.
+>
+> **Split outputs (0.26).** The loader's **Outputs** choice: Stereo (the amp on
+> both), or Split, the amp on one output and the dry guitar on the other.
+> - Which side gets the amp is written into the file, as two factors (the amp
+>   share of L and of R) over a table the loader finds by its marker
+>   (`split_route_offset`; `nam_split_route` in namlite.c).
+> - Knob 3 becomes **Dry**: the dry side's level, -24 to +24 dB in about
+>   0.5 dB steps, 50 = unchanged, smoothed. The amp side is always fully wet.
+> - Full rate only, 194, the same file size. Templates:
+>   `tools/nam_template_split/`. Patch Editor shows knob 3 as Dry for
+>   captures exported as split.
+>
+> **Hardware (2026-10-19):** full, Eco, Eco+ and split (NAM213Pl / NAM214Pl,
+> BRIT50 Plexi, both sides) all load and play on the owner's MS-70CDR. Eco+ sounds audibly worse than full rate: it is a
+> trade, there when the DSP is needed for other effects.
+>
+> Templates: `tools/nam_template_ecoplus/`. Details:
+> [NAM-RUNTIME-INVESTIGATION.md](NAM-RUNTIME-INVESTIGATION.md), 2026-10-19.
 >
 > **Engine 0.25 (2026-10-02).** 51-row Bass/Mid/Treb table (3 KB smaller; odd knob
 > values play the next even one), flat-EQ skip, and an **Eco** checkbox: the model
@@ -141,7 +171,7 @@ plays it (the capture, then the cab's pedal filter); with no capture loaded,
 a cab shows its IR against that filter. A 48 kHz capture can also be shown as
 trained, next to the 44.1 kHz the pedal plays it at. The page's network
 matches the C kernel `tools/nam_prototype/generate.py` writes (checked
-against NAM Core) to 2e-7; the tone stack, gate and Eco are not included.
+against NAM Core) to 2e-7; the tone stack and gate are not included.
 
 ## Knobs
 
@@ -159,7 +189,7 @@ the same capture without an EQ. It costs ~1.8% of the DSP whatever the settings.
 ## DSP headroom
 
 At full rate one capture uses most of the pedal's DSP: it declares 194 of the
-roughly 225 the pedal allows, Eco 177, a cab 10. On the owner's MS-70CDR a
+roughly 225 the pedal allows, Eco 181, Eco+ 152, a cab 10 (0.26). On the owner's MS-70CDR a
 full-rate capture plus one light effect (Great Muff, or a cab) plays clean.
 Patch Editor's DSP meter adds the chain up before you write it. How the full rate was made to fit at all is in
 [NAM-RUNTIME-INVESTIGATION.md](NAM-RUNTIME-INVESTIGATION.md).
@@ -201,6 +231,13 @@ are rejected. File limit is 20 MB.
 
 44.1 and 48 kHz captures are accepted. Playback remains native 44.1 kHz without
 resampling, so 48 kHz captures can differ from their original tone and timing.
+For an amp-only 48 kHz capture the difference is small (within about ±1 dB in
+our measurements). A capture with a cab built in can be off by several dB,
+because its resonances move. Prefer the amp-only version plus a CabIR cab: the
+cab loader resamples 48 kHz IRs properly. The **Frequency response** view can
+show a 48 kHz capture as trained next to how the pedal plays it. A true
+48 kHz mode was built and measured, and doesn't fit the DSP (see
+NAM-RUNTIME-INVESTIGATION.md, 2026-10-19).
 Wet is mono. Hardware fidelity remains experimental.
 
 ## Verification

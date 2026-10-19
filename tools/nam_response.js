@@ -96,6 +96,72 @@ async function measure(weights,{onProgress,yieldEvery=4096}={}){
  return {freqs,curves};
 }
 
-const api={forward,fft,pink,transfer,smooth,grid,measure,LEVELS,FS,NFFT};
+// ---- Eco+ (engine 0.26): the network at n of every 8 samples, as the pedal runs it ----
+function hermite(ym1,y0,y1,y2,f){const c1=0.5*(y1-ym1),c2=ym1-2.5*y0+2*y1-0.5*y2,c3=0.5*(y2-ym1)+1.5*(y0-y1);return((c3*f+c2)*f+c1)*f+y0;}
+// The capture through src/hardware_probes/namlite/nam_resample.h's 8 -> n -> 8 cubic resampling.
+function ecoProcess(weights,x,n){
+ const step=forward(weights),y=new Float64Array(x.length),xin=[0,0],yout=[0,0,0];
+ for(let b=0;b+8<=x.length;b+=8){
+  const e=[xin[0],xin[1],...x.subarray(b,b+8),x[b+7]],mid=[];xin[0]=x[b+6];xin[1]=x[b+7];   // the pad is only read (x 0) at n = 8
+  for(let i=0;i<n;i++){const a8=8*i,a=Math.floor(a8/n),f=(a8-a*n)/n;mid.push(step(hermite(e[a],e[a+1],e[a+2],e[a+3],f)));}
+  const m=[yout[0],yout[1],yout[2],...mid];yout[0]=mid[n-3];yout[1]=mid[n-2];yout[2]=mid[n-1];
+  for(let k=0;k<8;k++){const q=k*n,j=q>>3,g=(q&7)/8;y[b+k]=hermite(m[j],m[j+1],m[j+2],m[j+3],g);}
+ }
+ return y;
+}
+// RBJ biquads, normalised [b0, b1, b2, a1, a2] at 44.1 kHz.
+function rbj(kind,f0,gainDb,q){
+ const A=Math.pow(10,gainDb/40),w=2*Math.PI*f0/FS,al=Math.sin(w)/(2*q),c=Math.cos(w);let b,a;
+ if(kind==='peak'){b=[1+al*A,-2*c,1-al*A];a=[1+al/A,-2*c,1-al/A];}
+ else{const sA=2*Math.sqrt(A)*al;b=[A*((A+1)+(A-1)*c+sA),-2*A*((A-1)+(A+1)*c),A*((A+1)+(A-1)*c-sA)];a=[(A+1)-(A-1)*c+sA,2*((A-1)-(A+1)*c),(A+1)-(A-1)*c-sA];}
+ return [b[0]/a[0],b[1]/a[0],b[2]/a[0],a[1]/a[0],a[2]/a[0]];
+}
+function biquadDb(c,f){const w=2*Math.PI*f/FS,cr=Math.cos(w),ci=-Math.sin(w),c2r=Math.cos(2*w),c2i=-Math.sin(2*w);
+ const nr=c[0]+c[1]*cr+c[2]*c2r,ni=c[1]*ci+c[2]*c2i,dr=1+c[3]*cr+c[4]*c2r,di=c[3]*ci+c[4]*c2i;return 10*Math.log10((nr*nr+ni*ni)/(dr*dr+di*di));}
+const ECO_SHAPE=p=>[rbj('shelf',Math.exp(p[0]),p[1],p[2]),rbj('peak',Math.exp(p[3]),p[4],p[5]),rbj('peak',Math.exp(p[6]),p[7],p[8])];
+const ECO_LO=[Math.log(1500),-6,0.3,Math.log(1500),-6,0.3,Math.log(4000),-6,0.3],ECO_HI=[Math.log(8000),12,2,Math.log(6000),6,3,Math.log(8000),6,3];
+// Levenberg-Marquardt on box-bounded parameters, numerical Jacobian.
+function lmFit(res,p0,lo,hi,iters=80){
+ const clamp=p=>p.map((v,i)=>Math.min(hi[i],Math.max(lo[i],v)));let p=clamp(p0),r=res(p),cost=r.reduce((s,v)=>s+v*v,0),lam=1e-2;
+ for(let it=0;it<iters;it++){
+  const J=p.map((_,j)=>{const q=p.slice(),h=1e-4*Math.max(1,Math.abs(p[j]));q[j]+=h;const rq=res(q);return rq.map((v,i)=>(v-r[i])/h);});
+  const n=p.length,A=Array.from({length:n},(_,a)=>Array.from({length:n},(_,b)=>J[a].reduce((s,v,i)=>s+v*J[b][i],0))),g=J.map(col=>col.reduce((s,v,i)=>s+v*r[i],0));
+  let improved=false;
+  for(let tries=0;tries<8&&!improved;tries++){
+   const M=A.map((row,a)=>[...row.map((v,b)=>v+(a===b?lam*(A[a][a]+1e-9):0)),-g[a]]);
+   for(let c=0;c<n;c++){let piv=c;for(let rr=c+1;rr<n;rr++)if(Math.abs(M[rr][c])>Math.abs(M[piv][c]))piv=rr;[M[c],M[piv]]=[M[piv],M[c]];
+    for(let rr=0;rr<n;rr++)if(rr!==c){const k=M[rr][c]/M[c][c];for(let cc=c;cc<=n;cc++)M[rr][cc]-=k*M[c][cc];}}
+   const q=clamp(p.map((v,j)=>v+M[j][n]/M[j][j])),rq=res(q),cq=rq.reduce((s,v)=>s+v*v,0);
+   if(cq<cost){p=q;r=rq;cost=cq;lam=Math.max(lam/3,1e-7);improved=true;}else lam*=4;
+  }
+  if(!improved)break;
+ }
+ return p;
+}
+// Eco+ correction for one capture: the mean, over three playing levels, of
+// (full rate - 4/8) from 150 Hz to 8 kHz, fitted as a shelf and two peaks.
+// Returns the 15 coefficients the pedal reads (three rows b0 b1 b2 a1 a2) and
+// the measured curves before/after, for the page to show.
+async function fitEcoEq(weights,{steps=4,onProgress}={}){
+ const n=1<<15,warm=4096,bins=Array.from({length:NFFT/2+1},(_,k)=>k*FS/NFFT),use=[];
+ for(let k=0;k<bins.length;k++)if(bins[k]>150&&bins[k]<8000)use.push(k);
+ const target=new Float64Array(use.length),per=[];
+ for(const [li,L] of LEVELS.entries()){
+  const x=pink(n+warm,4321+li).map(v=>v*Math.pow(10,L.db/20)),step=forward(weights),yf=x.map(v=>step(v));
+  if(onProgress)onProgress((li+0.5)/LEVELS.length);await new Promise(r=>setTimeout(r));
+  const ye=ecoProcess(weights,x,steps),xs=x.subarray(warm),hf=transfer(xs,yf.subarray(warm)),he=transfer(xs,ye.subarray(warm));
+  const d=use.map(k=>hf[k]-he[k]);per.push(d);d.forEach((v,i)=>{target[i]+=v/LEVELS.length;});
+  if(onProgress)onProgress((li+1)/LEVELS.length);await new Promise(r=>setTimeout(r));
+ }
+ const fs=use.map(k=>bins[k]),wt=fs.map(f=>f>6000?0.5:1);
+ const res=p=>{const c=ECO_SHAPE(p);return fs.map((f,i)=>wt[i]*(c.reduce((s,row)=>s+biquadDb(row,f),0)-target[i]));};
+ const p=lmFit(res,[Math.log(4000),6,0.7,Math.log(3500),2,1,Math.log(6500),2,1],ECO_LO,ECO_HI);
+ const rows=ECO_SHAPE(p);
+ for(const row of rows){const a1=Math.fround(row[3]),a2=Math.fround(row[4]);if(!(Math.abs(a2)<1&&Math.abs(a1)<1+a2))throw Error('The Eco+ correction came out unstable for this capture.');}
+ return {coefficients:rows.flat(),params:{shelfHz:Math.exp(p[0]),shelfDb:p[1],peak1Hz:Math.exp(p[3]),peak1Db:p[4],peak2Hz:Math.exp(p[6]),peak2Db:p[7]},
+  freqs:fs,lossDb:per,correctionDb:fs.map(f=>rows.reduce((s,row)=>s+biquadDb(row,f),0))};
+}
+
+const api={forward,fft,pink,transfer,smooth,grid,measure,ecoProcess,rbj,biquadDb,fitEcoEq,LEVELS,FS,NFFT};
 if(typeof module!=='undefined')module.exports=api;else root.NAMResponse=api;
 })(globalThis);

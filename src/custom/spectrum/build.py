@@ -17,7 +17,7 @@ N = 1024
 SR = 44100
 F_LO, F_HI = 40.0, 16000.0
 COLS = 126                          # screen columns 1..126, inside the frame
-PLOT_H = 36                         # frame rows 0..35; ticks to 37; labels at 38
+PLOT_H = 60                         # full screen (0.02): frame rows 0..59, ticks to 62, no knob row
 TICKS = {100: 3, 1000: 3, 10000: 3, 50: 1, 200: 1, 500: 1, 2000: 1, 5000: 1}
 
 
@@ -34,7 +34,6 @@ def background(title=False):
     c.rect(0, 0, 127, PLOT_H - 1)
     for f, n in TICKS.items():
         c.vline(x_of(f), PLOT_H, PLOT_H - 1 + n)
-    dials(c, ("RANGE", "FALL", "TILT"))
     if title:
         for x in range(1, 127):                           # a sample spectrum for the cover
             f = col_freq(x - 1)
@@ -42,8 +41,8 @@ def background(title=False):
             top = PLOT_H - 2 - max(0, round(lvl * (PLOT_H - 3)))
             if x % 2 == 0:
                 c.vline(x, top, PLOT_H - 2)
-        fill(c, 29, 5, 98, 19, 0)                          # a clear box for the title
-        c.draw_text("SPECTRUM", 64 - 31, 8, scale=2)
+        fill(c, 29, 7, 98, 21, 0)                          # a clear box for the title
+        c.draw_text("SPECTRUM", 64 - 31, 10, scale=2)
     return c
 
 

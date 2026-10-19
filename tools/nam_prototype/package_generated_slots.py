@@ -28,7 +28,7 @@ Identities (permanent once released -- patches store the FXID):
   NAM  1-8: 900-907, 9-16: 950-957, 17-216: 500-699 ('NAMS' + 3 digits)
   Cab  1-16: 930-945,               17-216: 700-899 ('CabS' + 3 digits)
 
-    python3 tools/nam_prototype/package_generated_slots.py
+    python3 tools/nam_prototype/package_generated_slots.py [nam] [eco] [ecoplus] [split] [cab]
 """
 import base64, hashlib, json, sys
 from pathlib import Path
@@ -73,13 +73,15 @@ def text_size(data):
         return _read_elf_sections(z.elf)['.text']['size']
 
 
-def nam_engine(label, steps):
-    obj = ROOT / ('build/probes/namlite/template-' + P.VERSION + ('-eco' if steps < 8 else '')) / 'namlite.obj'
+def nam_engine(label, steps, eco_eq=False, split=False):
+    obj = ROOT / ('build/probes/namlite/template-' + P.VERSION + ('-eco' if steps < 8 else '') + ('-eq' if eco_eq else '')
+                  + ('-split' if split else '')) / 'namlite.obj'
     o = ObjFile(obj)
     ws = next(s for s in o.symbols if s['name'] == 'nam_weights')
     weights = bytes(o.sections[ws['shndx']]['data'][ws['value']:ws['value'] + P.N_WEIGHTS * 4])
     m = json.loads((ROOT / 'src/hardware_probes/namlite/manifest.json').read_text())
-    params = params_from_manifest(m['params'] + P.TONE_PARAMS)
+    base = [dict(p, name='Dry', default=50) if split and p['name'] == 'Mix' else p for p in m['params']]
+    params = params_from_manifest(base + P.TONE_PARAMS)
 
     def build(slot, ident, picture):
         out = WORK / label / f'slot-{slot}.out'          # not .ZDL: build/probes is scanned for probes
@@ -93,7 +95,18 @@ def nam_engine(label, steps):
         assert data.count(weights) == 1, f'{label} slot {slot}: seed weights not found once'
         at = data.index(weights)
         data[at:at + len(weights)] = bytes(len(weights))      # no capture ships
-        return bytes(data), dict(weights_offset=at)
+        extra = dict(weights_offset=at)
+        if split:                                             # split: where the loader writes the routing
+            import struct
+            mark = struct.pack('<4f', 1, 0, 0, 27182.818)
+            assert data.count(mark) == 1, f'{label} slot {slot}: split routing not found once'
+            extra['split_route_offset'] = data.index(mark)
+        if eco_eq:                                            # Eco+: where the loader writes the correction
+            import struct
+            mark = struct.pack('<16f', 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 16180.339)
+            assert data.count(mark) == 1, f'{label} slot {slot}: Eco+ table not found once'
+            extra['eco_eq_offset'] = data.index(mark)
+        return bytes(data), extra
     return build
 
 
@@ -216,12 +229,23 @@ def package(label, tpl_dir, manifest_name, build, old_ident, prefix, fxid_of, ki
 
 
 def main():
-    package('NAM full', ROOT / 'tools/nam_template', 'multi.json', nam_engine('nam', 8), P.nam_ident, 'NAMS',
-            nam_fxid, 'NAM', lambda s: f'slot-{s}.bin')
-    package('NAM eco', ROOT / 'tools/nam_template_eco', 'multi.json', nam_engine('nam-eco', 6), P.nam_ident, 'NAMS',
-            nam_fxid, 'NAM', lambda s: f'slot-{s}.bin')
-    package('CabIR', ROOT / 'tools/cab_template', 'cab.json', cab_engine(), lambda s: f'CabSl{s:02d}', 'CabS',
-            cab_fxid, 'IR', lambda s: f'slot-{s:02d}.bin')
+    # Which engines: all by default, or some by name (0.26 left the cabs alone).
+    which = set(sys.argv[1:]) or {'nam', 'eco', 'ecoplus', 'split', 'cab'}
+    if 'nam' in which:
+        package('NAM full', ROOT / 'tools/nam_template', 'multi.json', nam_engine('nam', 8), P.nam_ident, 'NAMS',
+                nam_fxid, 'NAM', lambda s: f'slot-{s}.bin')
+    if 'eco' in which:
+        package('NAM eco', ROOT / 'tools/nam_template_eco', 'multi.json', nam_engine('nam-eco', 6), P.nam_ident, 'NAMS',
+                nam_fxid, 'NAM', lambda s: f'slot-{s}.bin')
+    if 'ecoplus' in which:
+        package('NAM eco+', ROOT / 'tools/nam_template_ecoplus', 'multi.json', nam_engine('nam-ecoplus', 4, eco_eq=True),
+                P.nam_ident, 'NAMS', nam_fxid, 'NAM', lambda s: f'slot-{s}.bin')
+    if 'split' in which:
+        package('NAM split', ROOT / 'tools/nam_template_split', 'multi.json', nam_engine('nam-split', 8, split=True),
+                P.nam_ident, 'NAMS', nam_fxid, 'NAM', lambda s: f'slot-{s}.bin')
+    if 'cab' in which:
+        package('CabIR', ROOT / 'tools/cab_template', 'cab.json', cab_engine(), lambda s: f'CabSl{s:02d}', 'CabS',
+                cab_fxid, 'IR', lambda s: f'slot-{s:02d}.bin')
 
 
 if __name__ == '__main__':

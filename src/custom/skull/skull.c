@@ -1,11 +1,11 @@
-/* Skull v0.04: a shaded 3D skull that reacts to the signal, idles with
+/* Skull v0.05: a shaded 3D skull that reacts to the signal, idles with
  * animations when it's quiet, and explodes at the loudest (MS-70CDR 2.10).
  *
  * Audio passes through untouched. A fast-attack follower (release set by
  * Decay) drives it: the jaw opens through SKULL_JAW_STEPS pre-rendered frames
  * (our own 3D model, lit and dithered: skull3d.py), the eye lights grow and
  * flicker with level, and a sharp attack jolts it sideways. Full screen: the
- * knob boxes are hidden at start-up (zv_hide_knob_boxes, experimental).
+ * knob boxes are hidden, re-checked every callback (zv_hide_knob_boxes, experimental).
  *
  * Quiet for ~3 s, it idles, one animation every ~2.5 s, in turn: looks around,
  * spins, a snake crawls out of one eye socket through the mouth and out of
@@ -366,6 +366,10 @@ void Fx_DLY_Skull(uintptr_t *ctx)
 
     visible = zv_visible(&st->z, ctx);
     zv_service(&st->z, info, visible);
+    /* Again every callback, not only at start-up: on the pedal the knob boxes
+     * came back in v0.04 (filled in after our first callback, or restored on a
+     * redraw). Idempotent: it only clears boxes still sized 20x15. */
+    zv_hide_knob_boxes(&st->z, info);
     if (!on || !visible) { st->step = 0; st->dec = 0; st->have = NOFRAME; return; }
 
     {   /* follow the signal every callback */

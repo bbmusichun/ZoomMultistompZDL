@@ -32,10 +32,11 @@ static const volatile float nam_pad[NAM_PAD_FLOATS] = {0};
 #define NAM_ABS(x) fabsf(x)
 #endif
 #define NAM_CLIP1(v) (0.5f * (NAM_ABS((v) + 1.0f) - NAM_ABS((v) - 1.0f)))
+#include "nam_resample.h"   /* Eco's cubic resampling and the soft output limiter (0.26) */
 #endif
 #define NAM_MAGIC 0x4e414d32u
 #if defined(NAM_EXACT_RINGS) && defined(NAM_TONE_STACK) && defined(NAM_GATE)
-#define NAM_VERSION 5u        /* + gate state */
+#define NAM_VERSION 6u        /* + gate state; 6: Eco resampler state (0.26) */
 #elif defined(NAM_EXACT_RINGS) && defined(NAM_TONE_STACK)
 #define NAM_VERSION 4u        /* + tone-stack state */
 #elif defined(NAM_EXACT_RINGS)
@@ -48,11 +49,33 @@ static const volatile float nam_pad[NAM_PAD_FLOATS] = {0};
 #define NAM_VERSION 1u
 #endif
 #define NAM_HISTORY (sizeof(((NamState *)0)->history) / sizeof(float))
+#ifdef NAM_SPLIT
+/* Split routing (0.26), written by the loader: how much amp each side gets,
+ * {1, 0} = amp L / dry R, {0, 1} = dry L / amp R. Factors, not a route number:
+ * a float->int conversion and compares here mis-ran in the emulator (the amp
+ * side read gain 0). The 4th value is a marker the loader finds the table by.
+ * volatile: read at run time, never folded. */
+static const volatile float nam_split_route[4] = {1, 0, 0, 27182.818f};
+#endif
+#ifdef NAM_ECO_EQ
+/* Eco+ (0.26): at half rate the network makes less treble; three biquads
+ * (b0 b1 b2 a1 a2, normalised; a shelf and two peaks) put it back. The
+ * loader fits them for each capture (nam_response.js) and writes them over
+ * this identity default; the 16th value is a marker it finds them by.
+ * volatile: the compiler must not fold the identity default away. */
+static const volatile float nam_eco_eq[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 16180.339f};
+#endif
 typedef struct {
     unsigned magic, version, clear_index, ready, warm;
     float mix, input, output;
 #ifdef NAM_RATE_STEPS
-    float prev;               /* last network output, for the N->8 interpolation */
+    NamEcoState eco;          /* resampler history: last inputs and model outputs (0.26) */
+#ifdef NAM_ECO_EQ
+    float eco_z[6];           /* Eco+ correction biquad state */
+#endif
+#endif
+#ifdef NAM_SPLIT
+    float dry_g, split_pad;   /* split: smoothed gain of the dry side */
 #endif
 #ifdef NAM_TONE_STACK
     float eq[6];              /* bass, middle, treble biquad state (2 each) */
@@ -102,7 +125,13 @@ void Fx_FLT_NAMLite(uintptr_t *ctx)
             st->net.lpos[i] = 0;
 #endif
 #ifdef NAM_RATE_STEPS
-        st->prev = 0;         /* first interpolated sample must not read garbage */
+        for (i = 0; i < sizeof(st->eco) / sizeof(float); ++i) ((float *)&st->eco)[i] = 0;   /* no garbage into the curves */
+#ifdef NAM_ECO_EQ
+        for (i = 0; i < 6u; ++i) st->eco_z[i] = 0;
+#endif
+#endif
+#ifdef NAM_SPLIT
+        st->dry_g = 1.0f; st->split_pad = 0;
 #endif
 #ifdef NAM_TONE_STACK
         for (i = 0; i < 6u; ++i) st->eq[i] = 0;
@@ -124,7 +153,11 @@ void Fx_FLT_NAMLite(uintptr_t *ctx)
         }
         return;
     }
+#ifdef NAM_SPLIT
+    mix = 1.0f;               /* split: the amp side is fully wet; knob 3 is the dry side's level */
+#else
     mix = zoom_param_norm01(params[7], 0);
+#endif
     input = 2.0f * zoom_param_norm01(params[5], 0.5f);
     /* Fine attenuation for high-gain captures: 1=-68dB, 5=-40dB,
      * 10=-28dB, 25=-12dB, 50=unity. Above unity keep the old law.
@@ -229,39 +262,28 @@ void Fx_FLT_NAMLite(uintptr_t *ctx)
      * network generating less high content, because its dilated receptive field
      * is a fixed number of SAMPLES and so spans more time at a lower rate.
      *
-     * HOW. Decimate 8 -> N with a 2-tap average, run the network, then linearly
-     * interpolate N -> 8. Positions are exact eighths, so the index and fraction
-     * come from integer arithmetic: no runtime divide, and no float->unsigned
-     * cast (which pulls in __c6xabi_fixfu -- a documented freeze, see Mangle in
-     * LOADER-SAFETY.md). At N=4 this reduces exactly to the 2:1 halving of 0.17.
-     *
-     * The generated kernel stays byte-identical; only the feeding and reading
-     * change. `prev` carries the last network output across callbacks so output
-     * sample 0 has something to interpolate from. */
-    for (i = 0; i < (unsigned)NAM_RATE_STEPS; ++i) {
-        /* a >= i for any N <= 8, so this in-place walk never reads a slot it
-         * has already overwritten. */
-        unsigned a = (i * 8u) / (unsigned)NAM_RATE_STEPS;
-        unsigned b = a + 1u < 8u ? a + 1u : 7u;
-        st->net.input[i] = 0.5f * (st->net.input[a] + st->net.input[b]);
-    }
+     * HOW (0.26). Resample 8 -> N and N -> 8 with 4-point cubic curves at exact,
+     * even positions (nam_resample.h). Until 0.25: a 2-tap average at the
+     * uneven positions floor(8i/N) and linear interpolation back, which left
+     * spurs (-22.8 dB at 3 kHz). Indices and fractions come from integer
+     * arithmetic on constants: no runtime divide, and no float->unsigned cast
+     * (which pulls in __c6xabi_fixfu -- a documented freeze, see Mangle in
+     * LOADER-SAFETY.md). The generated kernel is unchanged. */
+    nam_eco_down(&st->eco, st->net.input, NAM_RATE_STEPS);   /* cubic, even positions (nam_resample.h) */
     nam_block(&st->net,NAM_RATE_STEPS);
-    {
-        float y[8];
-        float prev = st->prev;
-        for (i = 0; i < (unsigned)NAM_RATE_STEPS; ++i) y[i] = st->net.output[i];
-        for (i = 8u; i-- > 0u; ) {
-            unsigned qn = (i + 1u) * (unsigned)NAM_RATE_STEPS;   /* position x 8 */
-            unsigned f0 = qn >> 3;
-            float frac = (float)(qn & 7u) * 0.125f;
-            /* the sequence is { prev, y[0..N-1] }, so index f0 maps to y[f0-1] */
-            float lo = f0 == 0u ? prev : y[f0 - 1u];
-            float hi = f0 >= (unsigned)NAM_RATE_STEPS ? y[NAM_RATE_STEPS - 1]
-                                                      : y[f0];
-            st->net.output[i] = lo + frac * (hi - lo);
+    nam_eco_up(&st->eco, st->net.output, NAM_RATE_STEPS);
+#ifdef NAM_ECO_EQ
+    {   /* Eco+ correction, at 44.1 kHz after the upsampling */
+        float c[15];
+        for (i = 0; i < 15u; ++i) c[i] = nam_eco_eq[i];
+        for (i = 0; i < 8u; ++i) {
+            float y = st->net.output[i];
+            y = nam_biquad(c, st->eco_z, y);
+            y = nam_biquad(c + 5, st->eco_z + 2, y);
+            st->net.output[i] = nam_biquad(c + 10, st->eco_z + 4, y);
         }
-        st->prev = y[NAM_RATE_STEPS - 1];
     }
+#endif
 #else
     nam_block(&st->net,8);
 #endif
@@ -324,14 +346,51 @@ void Fx_FLT_NAMLite(uintptr_t *ctx)
     {
         float m = st->mix;
         const float target = st->warm >= 8192u ? mix : 0.0f;
+#ifdef NAM_SPLIT
+        /* Split (0.26): the amp on one output, the dry guitar on the other.
+         * Which side is chosen in the loader and written over nam_split_route
+         * as two factors ({1, 0} = amp L / dry R, {0, 1} = dry L / amp R). Knob 3, "Dry" in split
+         * files, is the dry side's level: -24 dB .. +24 dB in even dB steps,
+         * 50 = unchanged (a clean guitar is much quieter than the amp).
+         * Chosen once per callback and applied as factors, so the loop stays
+         * predicate-free. */
+        const float wet_l = nam_split_route[0], wet_r = nam_split_route[1];
+        float dg_t, dg = st->dry_g;
+        {   /* 2^(8u - 4), u = 0..1: the exponent's integer part into the float's
+             * exponent bits, a cubic for the fraction (<0.1%); no pow() helper */
+            float x = zoom_param_norm01(params[7], 0.5f) * 8.0f, f;
+            int n = (int)x;
+            union { float f; unsigned u; } e;
+            f = x - (float)n;
+            e.u = (unsigned)(n - 4 + 127) << 23;
+            dg_t = e.f * (1.0f + f * (0.6951f + f * (0.2262f + f * 0.0787f)));
+        }
+#endif
+        float ys[8];
+        /* Level, then the soft limiter (exact below 0.75, then soft to +-1;
+         * 0.26), in a loop of its own: the mix loop below cannot overlap
+         * iterations (the mix ramp), so work inside it costs its full latency. */
+        for (i = 0; i < 8u; ++i) ys[i] = nam_soft(st->net.output[i] * st->net.gain[i]);
         for (i = 0; i < 8u; ++i) {
-            float l = fx[i], r = fx[i+8], y = st->net.output[i] * st->net.gain[i];
+            float l = fx[i], r = fx[i+8], y = ys[i];
             m += 0.002f * (target - m);
-            y = NAM_CLIP1(y);
+#ifdef NAM_SPLIT
+            dg += 0.002f * (dg_t - dg);
+            {   /* the dry side takes the Dry level; the amp side is as before */
+                float gl = wet_l + (1.0f - wet_l) * dg, gr = wet_r + (1.0f - wet_r) * dg;
+                l *= gl; r *= gr;
+            }
+            fx[i] = l + (m * wet_l) * (y - l);
+            fx[i+8] = r + (m * wet_r) * (y - r);
+#else
             fx[i] = l + m * (y - l);
             fx[i+8] = r + m * (y - r);
+#endif
         }
         st->mix = m;
+#ifdef NAM_SPLIT
+        st->dry_g = dg;
+#endif
         if (st->warm < 8192u) st->warm += 8u;       /* 8192 is a multiple of 8 */
     }
 #else

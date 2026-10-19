@@ -5,6 +5,7 @@
  * capture 128 columns of `spc` samples -- min/max of (L+R)/2 (Wave) or L
  * against R as points (XY) -- then draw them over the static background in four
  * steps and hand the frame to zvis, which encodes and shows it (~30 fps).
+ * Full screen (0.03): the plot uses all 64 rows and the knob boxes are hidden.
  * See ../common/zvis.h for the firmware side and its rules. */
 #include <stdint.h>
 #include "zvis.h"
@@ -12,7 +13,7 @@
 
 extern unsigned int _Fx_DLY_Scope_Info[];
 
-#define MAGIC   0x53434F51u                    /* 'SCOQ' (v0.02 layout) */
+#define MAGIC   0x53434F52u                    /* 'SCOR' (v0.03 layout: 64 rows) */
 #define FXID    414u
 #define PH      SCOPE_PLOT_H
 #define TOP     1
@@ -27,7 +28,7 @@ typedef struct {
     unsigned magic, phase, col, k, spc, wait, xy, step;
     float last, gain;
     unsigned char lo[ZV_W], hi[ZV_W];
-    unsigned char dots[5 * ZV_W];              /* XY: raw column bytes, rows 0..39 */
+    unsigned char dots[8 * ZV_W];              /* XY: raw column bytes, rows 0..63 */
     ZvState z;
 } ScopeState;
 
@@ -74,6 +75,9 @@ void Fx_DLY_Scope(uintptr_t *ctx)
 
     visible = zv_visible(&st->z, ctx);
     zv_service(&st->z, info, visible);
+    /* Full screen: the firmware's knob boxes hidden, again every callback (they
+     * can come back after our first callback; idempotent, see Skull). */
+    zv_hide_knob_boxes(&st->z, info);
     if (params[0] < 0.5f || !visible) { st->phase = ARM; return; }   /* off or not on screen: no work */
     if (st->z.phase != ZV_IDLE) return;                              /* frame still being published */
 
@@ -86,7 +90,7 @@ void Fx_DLY_Scope(uintptr_t *ctx)
         st->xy = (int)(zoom_param_norm01(params[7], 0.0f) * 100.0f + 0.5f) != 0;
         st->wait = 0; st->col = 0; st->k = 0; st->last = 0.0f;
         for (i = 0; i < ZV_W; ++i) { st->lo[i] = (unsigned char)BOT; st->hi[i] = (unsigned char)TOP; }
-        for (i = 0; i < 5u * ZV_W; ++i) st->dots[i] = 0;
+        for (i = 0; i < 8u * ZV_W; ++i) st->dots[i] = 0;
         st->phase = st->xy ? CAPTURE : TRIG;
     }
     if (st->phase == TRIG) {
@@ -127,7 +131,7 @@ void Fx_DLY_Scope(uintptr_t *ctx)
         int b;
         for (c = c0; c < c0 + 32u; ++c) {
             if (st->xy) {
-                for (b = 0; b < 5; ++b) st->z.frame[(unsigned)b * ZV_W + c] |= st->dots[(unsigned)b * ZV_W + c];
+                for (b = 0; b < 8; ++b) st->z.frame[(unsigned)b * ZV_W + c] |= st->dots[(unsigned)b * ZV_W + c];
             } else {
                 int lo = st->lo[c], hi = st->hi[c];
                 if (c) {                                     /* join to the previous column */

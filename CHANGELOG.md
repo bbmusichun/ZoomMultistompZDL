@@ -4,8 +4,42 @@ What changed, newest first. The project has no version numbers; entries are
 dated. Effects in [dist/](dist/) carry their own version in the file
 (shown in Zoom Effect Manager).
 
-## 2026-10-19
+## Unreleased
 
+### NAM engine 0.26 (works on the pedal)
+- **Eco+**: half-rate NAM, with a correction EQ the loader fits to each
+  capture: 152 instead of 194, for amp-only captures into a cab. It sounds
+  worse than full rate: use it when the DSP is needed for other effects.
+- **Eco** resamples with cubic curves at evenly spaced positions, so its
+  whistle-like spurs drop by 30-45 dB. It costs 181 instead of 177.
+- **Soft output limiter** instead of the hard clip at full scale.
+- **Split outputs**: the amp on one output, the clean guitar on the other
+  (for a second amp or a DI). Pick the side in the loader. Knob 3 becomes
+  **Dry**, the dry side's level, -24 to +24 dB with 50 = unchanged. Full
+  rate only, same file size and DSP cost (194). Works on the pedal.
+
+### Emulator
+- Fixed a Ziddle decoding bug (local copy): a masked 16-bit stack store in a
+  pipelined loop counted as unit D1 instead of D2, so it was replayed on every
+  iteration and overwrote a saved pointer. The split build still disagrees with
+  the host in the emulator but plays correctly on the pedal; see
+  docs/NAM-RUNTIME-INVESTIGATION.md.
+
+### README art
+- New hero: the console painting with all its detail, in the screens'
+  pale-blue phosphor, its red LEDs kept (`graphics/make_phosphor_hero.py`).
+- The effects overview shows every effect: the pack, the experimental effects
+  (live screens as they play), a NAM and a CAB example, and the Matujuice pack
+  in a credited band. Thumbnails for all of them in the README.
+- The Patch + Cover Editor image is re-shot from the current pages.
+- One list of what the README shows, for both generators: `build/readme_art.py`.
+
+### Library
+- The **Matujuice effects pack v1.5** by Luca Matturro is included in
+  `dist/`, credited, with its licence. The Patch Editor lists it under his
+  name.
+
+roughly 225 the pedal allows, Eco 181, Eco+ 152, a cab 10 (0.26).
 ### NAM + Cab Loader
 - **Frequency response**: the capture's EQ curve at three playing levels,
   through any cab in your bank, or a cab's IR against its pedal filter; 48 kHz
@@ -13,6 +47,10 @@ dated. Effects in [dist/](dist/) carry their own version in the file
   (`tools/nam_response.js`, matched to the validated C kernel).
 
 ### Visual effects (experimental, MS-70CDR firmware 2.10)
+- **Full screen**: Scope v0.03, Spectrum v0.02 and Ring v0.02 draw over the
+  whole display, with no knob row; the knobs are on the knob pages.
+- **Skull v0.05**: the knob boxes stay hidden. They came back on the pedal in
+  v0.04 because the hide ran only once, at start-up; it now runs every callback.
 - **Skull v0.04**: idle animations when it's quiet (looks around, spins, a
   snake through the eye sockets and mouth, rolls, melts into dust); a more
   violent explosion of shards cut from its own picture.
@@ -92,7 +130,8 @@ These three are built locally and are not in `dist/` yet.
 ### Docs and graphics
 - The README's main image is redrawn in the Skull's 1-bit dither
   (`graphics/14-console-dithered.png`, made by
-  `graphics/make_dithered_hero.py`; 36 KB instead of 2.9 MB).
+  `graphics/make_dithered_hero.py`; 36 KB instead of 2.9 MB). Replaced on
+  2026-10-19 by the phosphor hero (see Unreleased).
 - NAM Loader guide, NAM template docs and the reserved effect ID list
   updated for 216 slots, names and icons.
 - This changelog.

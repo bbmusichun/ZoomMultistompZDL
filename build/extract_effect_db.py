@@ -160,6 +160,14 @@ def check_dist_filenames() -> None:
         size_check(f)
 
 
+# Effects in dist/ made by others, shown under their maker in the Patch Editor.
+# Matujuice ZDL effects pack v1.5, MIT (dist/matujuice/LICENSE), unmodified
+# release files: github.com/matujuice/zoom-ms-zdl-effects-pack
+MATUJUICE = "Matujuice pack v1.5 by Luca Matturro (MIT)"
+CREDITS = {name: MATUJUICE for name in ("Breather", "Choral", "DirtBox", "DualShft", "DubSiren", "EuGate",
+                                       "GridDly", "SGNL", "Scrub", "Sweep", "SyncEQ", "WaveFold")}
+
+
 def _private(paths):
     """dist/ files git ignores: NAM captures, cab fits, third-party IR banks."""
     import subprocess
@@ -196,6 +204,8 @@ def main() -> None:
         cur = best.get(e["id"])
         if cur is None or r < cur[0]:
             e["cover"] = _cover_b64(f)
+            if f.parent == ROOT / "dist" and f.stem in CREDITS:
+                e["credit"] = CREDITS[f.stem]
             best[e["id"]] = (r, e, r == 0, f in probe_paths)
 
     db = {"custom": [], "stock": [], "probes": []}

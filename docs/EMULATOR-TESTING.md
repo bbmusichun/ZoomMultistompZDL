@@ -38,6 +38,14 @@ it pulls in Cranelift.
 > `~/ziddle/inputs/`. **Never in /tmp**: macOS clears it, and that has cost the
 > whole setup twice. `tools/nam_prototype/host_vs_emulator.py` (TI vs host) and
 > `tools/nam_prototype/make_capture.cjs` (loader-path capture builds) are in the repo.
+>
+> **Local fix to re-apply after a fresh download (2026-10-19).** In
+> `product/cpu/src/insn/mod.rs`, `compact_unit`, the Dstk rule
+> `(h & 0x8c06) == 0x8c04` must return `(Unit::D, Side::B)`: Dstk
+> (`LDW/STW *B15[ucst5]`) always runs on .D2, and bit 12 only picks the data
+> register file. Without the fix, a masked `STW.D2T1` to the stack under
+> `SPMASK ... D2` is replayed on every SPLOOP iteration and corrupts a spilled
+> value (see NAM-RUNTIME-INVESTIGATION.md, 2026-10-19).
 
 ## 2. `matcheck` — does `_init` materialize params?
 

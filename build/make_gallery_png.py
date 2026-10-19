@@ -15,8 +15,11 @@ The physical pixel aspect comes from lcd_geometry.PIXEL_ASPECT (about 1.4),
 so a 128x64 bitmap is displayed at approximately 10:7, matching PE. No VHS
 filter is applied to the release gallery.
 
+Which effects, and where each picture comes from (cover, live screen or a
+loader example), is listed in readme_art.py.
+
 Usage:
-    python3 build/make_gallery_png.py            # every effect in dist/
+    python3 build/make_gallery_png.py            # every README entry
     python3 build/make_gallery_png.py Stasis     # just one
 """
 
@@ -47,43 +50,32 @@ CANVAS = (640, INNER[1] + 12)
 ORIGIN = (5, 6)
 
 
-def render(zdl: Path, out: Path) -> None:
-    px, _name = decode_picture(str(zdl))
-    h = len(px)
-    w = len(px[0]) if h else 0
-    cover = Image.new("RGB", (w, h), BG)
-    load = cover.load()
-    for y in range(h):
-        row = px[y]
-        for x in range(w):
-            if row[x]:
-                load[x, y] = LIT
-    cover = cover.resize(INNER, Image.NEAREST)
+def render(name: str, out: Path) -> None:
+    import readme_art
+    cover = readme_art.to_image(readme_art.bits_for(name), INNER, BG, LIT)
     canvas = Image.new("RGB", CANVAS, BG)
     canvas.paste(cover, ORIGIN)
-    # Gentler than the hero: these render at 220px in the README table, where the
-    # full tape pass turns knob labels into texture. Seeded per effect so each one
-    # gets its own dropouts instead of 21 identically-damaged frames.
     # Native artwork: no texture that obscures pixels at pedal size.
     out.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(out)
 
 
 def main() -> int:
+    import readme_art as A
+    every = A.PACK + A.EXPERIMENTAL + A.MATUJUICE + [e[0] for e in A.EXAMPLES]
     wanted = sys.argv[1:]
-    dist = ROOT / "dist"
-    gfx = ROOT / "graphics"
-    zdls = sorted(dist.glob("*.ZDL"))
     if wanted:
         keep = {w.lower() for w in wanted}
-        zdls = [z for z in zdls if z.stem.lower() in keep]
-        if not zdls:
-            print(f"no match in dist/ for {wanted}", file=sys.stderr)
+        names = [n for n in every if n.lower() in keep]
+        if not names:
+            print(f"no README entry named {wanted}", file=sys.stderr)
             return 1
-    for z in zdls:
-        out = gfx / f"{z.stem.lower()}.png"
-        render(z, out)
-        print(f"  {z.stem:<10} -> {out.relative_to(ROOT)}")
+    else:
+        names = every
+    for n in names:
+        out = ROOT / "graphics" / f"{n.lower()}.png"
+        render(n, out)
+        print(f"  {n:<12} -> {out.relative_to(ROOT)}")
     return 0
 
 

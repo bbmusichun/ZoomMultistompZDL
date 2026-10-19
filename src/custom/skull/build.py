@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Skull v0.04: a shaded 3D skull that reacts to the signal, idles with
+"""Build Skull v0.05: a shaded 3D skull that reacts to the signal, idles with
 animations when it's quiet, and explodes at the loudest (MS-70CDR 2.10), on zvis.
 
 skull3d.py renders our own 3D skull model, lit and dithered to 1 bit: JAW_STEPS

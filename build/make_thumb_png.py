@@ -5,8 +5,11 @@ The old hero was made by hand in June 2026 and said "x16" long after the pack
 passed sixteen effects; it was already three effects stale when the count reached
 21. This generates it, so the count and the artwork can never drift again.
 
-Every card is the effect's REAL on-device cover, decoded straight out of the
-built .ZDL -- the same 128x64 bitmap the pedal puts on its screen, title bar,
+Which effects, and where each card comes from, is in readme_art.py: the
+release pack, the experimental effects (animated screens as live frames), a NAM
+and a CAB loader example, and Luca Matturro's pack in a credited band of its
+own. A normal card is the effect's REAL on-device cover, decoded straight out
+of the built .ZDL -- the same 128x64 bitmap the pedal puts on its screen, title bar,
 emblem, knob names and all. Nothing here is a mock-up of the pedal, which is why
 the hero cannot show a knob name the firmware does not have.
 
@@ -46,8 +49,9 @@ CARD_BG = (4, 4, 5)      # --screen-bg
 LIT = (157, 193, 216)    # --ink-bright / --screen-fg
 DIM = (108, 134, 150)    # --ink-soft
 
-CANVAS = (1600, 900)
-COLS, ROWS = 6, 4
+COLS = 8
+MARGIN = 40
+SECTION_GAP = 36
 CARD = (244, 171)        # 128x64 stretched the way the device's non-square pixels want
 GAP = 12
 SEED = 20260827
@@ -68,27 +72,24 @@ def draw_text(grid, text, x0, y0, scale=1, spacing=1):
     return x
 
 
-def title_card(n_effects: int, w: int, h: int) -> Image.Image:
-    """The one card that is not a cover: pack name and a count that is computed."""
+def title_card(lines, badge: str, w: int, h: int) -> Image.Image:
+    """A card that is not a cover: a section name and a count that is computed.
+    lines: (text, y, scale, spacing) in the 256x64 card grid."""
     gw, gh = 256, 64
     g = np.zeros((gh, gw), dtype=bool)
-    draw_text(g, "CUSTOM", 8, 6, scale=4, spacing=3)
-    draw_text(g, "EFFECTS", 8, 26, scale=4, spacing=3)
-    # Scale 2, not 1: a 5px-tall glyph does not survive the chroma smear and the
-    # line jitter -- at scale 1 this line came out of the tape pass as texture.
-    draw_text(g, "ZOOM MS-70CDR - ZDL PACK", 8, 50, scale=2, spacing=2)
+    for text, y, sc, sp in lines:
+        draw_text(g, text, 8, y, scale=sc, spacing=sp)
 
     # Count badge: filled box with the number knocked OUT of it. Both the box and
     # the knock-out must be built from the same glyph metrics or the text lands
     # off the box and reads as a smudge, which is exactly what it did.
-    label = f"X{n_effects}"
     sc, sp, pad = 4, 3, 7
-    tw = len(label) * (3 * sc + sp) - sp
+    tw = len(badge) * (3 * sc + sp) - sp
     bx1, by0, by1 = gw - 8, 6, 6 + 5 * sc + 2 * pad
     bx0 = bx1 - (tw + 2 * pad)
     g[by0:by1, bx0:bx1] = True
     knock = np.zeros((gh, gw), dtype=bool)
-    draw_text(knock, label, bx0 + pad, by0 + pad, scale=sc, spacing=sp)
+    draw_text(knock, badge, bx0 + pad, by0 + pad, scale=sc, spacing=sp)
     g[knock] = False
 
     img = Image.new("RGB", (gw, gh), CARD_BG)
@@ -114,20 +115,21 @@ def cover_card(zdl: Path, w: int, h: int) -> Image.Image:
     return img.resize((w, h), Image.NEAREST)
 
 
-def compose(cards: list[Image.Image], title: Image.Image) -> Image.Image:
-    canvas = Image.new("RGB", CANVAS, BG)
+def compose(sections) -> Image.Image:
+    """sections: [(title card spanning two cells, [cards])], stacked, SECTION_GAP apart."""
+    rows = [-(-(len(cards) + 2) // COLS) for _, cards in sections]
     gw = COLS * CARD[0] + (COLS - 1) * GAP
-    gh = ROWS * CARD[1] + (ROWS - 1) * GAP
-    ox = (CANVAS[0] - gw) // 2
-    oy = (CANVAS[1] - gh) // 2
-
-    def cell(i):
-        r, c = divmod(i, COLS)
-        return ox + c * (CARD[0] + GAP), oy + r * (CARD[1] + GAP)
-
-    canvas.paste(title, cell(0))          # spans cells 0 and 1
-    for i, card in enumerate(cards):
-        canvas.paste(card, cell(i + 2))
+    gh = sum(r * CARD[1] + (r - 1) * GAP for r in rows) + SECTION_GAP * (len(sections) - 1)
+    canvas = Image.new("RGB", (gw + 2 * MARGIN, gh + 2 * MARGIN), BG)
+    y0 = MARGIN
+    for (title, cards), r in zip(sections, rows):
+        def cell(i):
+            rr, cc = divmod(i, COLS)
+            return MARGIN + cc * (CARD[0] + GAP), y0 + rr * (CARD[1] + GAP)
+        canvas.paste(title, cell(0))          # spans cells 0 and 1
+        for i, card in enumerate(cards):
+            canvas.paste(card, cell(i + 2))
+        y0 += r * CARD[1] + (r - 1) * GAP + SECTION_GAP
     return canvas
 
 
@@ -229,27 +231,22 @@ def vhs(img: Image.Image, strength: float = 1.0, seed: int = SEED) -> Image.Imag
 
 
 def main() -> int:
-    dist = ROOT / "dist"
-    zdls = sorted(dist.glob("*.ZDL"), key=lambda p: p.stem.lower())
-    if not zdls:
-        print("no .ZDL in dist/ -- build first", file=sys.stderr)
-        return 1
-
-    slots = COLS * ROWS - 2          # two cells go to the title card
-    if len(zdls) > slots:
-        print(f"{len(zdls)} effects but only {slots} cells -- widen the grid",
-              file=sys.stderr)
-        return 1
-
-    cards = [cover_card(z, *CARD) for z in zdls]
-    title = title_card(len(zdls), CARD[0] * 2 + GAP, CARD[1])
-    out = compose(cards, title)
-
+    import readme_art as A
+    ours = sorted(A.PACK + A.EXPERIMENTAL, key=str.lower) + [e[0] for e in A.EXAMPLES]
+    card = lambda n: A.to_image(A.bits_for(n), CARD, CARD_BG, LIT)
+    tw = CARD[0] * 2 + GAP
+    # Scale 2, not 1, for the small line: a 5px-tall glyph reads as texture.
+    sections = [
+        (title_card([("CUSTOM", 6, 4, 3), ("EFFECTS", 26, 4, 3), ("ZOOM MS-70CDR - ZDL PACK", 50, 2, 2)],
+                    f"X{len(ours)}", tw, CARD[1]), [card(n) for n in ours]),
+        (title_card([("MATUJUICE", 6, 4, 3), ("BY LUCA MATTURRO", 30, 2, 2), ("INCLUDED - MIT", 46, 2, 2)],
+                    f"X{len(A.MATUJUICE)}", tw, CARD[1]), [card(n) for n in A.MATUJUICE]),
+    ]
+    out = compose(sections)
     dest = ROOT / "graphics" / "thumb_effects.png"
     dest.parent.mkdir(parents=True, exist_ok=True)
     out.save(dest)
-    print(f"  {len(zdls)} effects -> {dest.relative_to(ROOT)}  ({CANVAS[0]}x{CANVAS[1]})")
-    print("  " + ", ".join(z.stem for z in zdls))
+    print(f"  {len(ours)} + {len(A.MATUJUICE)} -> {dest.relative_to(ROOT)}  ({out.width}x{out.height})")
     return 0
 
 

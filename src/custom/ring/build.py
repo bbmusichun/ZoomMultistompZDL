@@ -7,18 +7,17 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "common"))
 from zvis_build import Canvas, raw, c_bytes, dials, fill, encode_zoom_rle, build  # noqa: E402
 
-PANEL = 44                        # black panel rows 0..44; knob boxes from 46
+PANEL = 63                        # full screen (0.02): black panel rows 0..63, no knob row
 
 
 def background(title=False):
     c = Canvas()
     fill(c, 0, 0, 127, PANEL)
-    dials(c)
     if title:
-        for y in range(16, 29):
+        for y in range(25, 38):
             for x in range(40, 89):
                 c.px(x, y, 0)
-        c.draw_text("RING", 64 - 15, 18, scale=2)
+        c.draw_text("RING", 64 - 15, 27, scale=2)
     return c
 
 

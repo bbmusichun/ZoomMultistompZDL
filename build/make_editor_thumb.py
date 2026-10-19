@@ -17,8 +17,11 @@ this image showed seven knobs, which is how the staleness got caught.
 The current Arrakis bitmap is imported through the JSON file input, so the
 capture does not depend on the cover editor's older embedded examples.
 
-The pages are captured at a NARROW viewport on purpose: at full width the slot
-cards sit in one long row, and the reference composition wants two tall panels.
+Both pages are shown as they open, in their default LCD theme (2026-10-19:
+the editors moved from the dark P4 phosphor look to it, and the old hero,
+cropped to the slot cards in P4, no longer looked like either page). The patch
+side shows the header and toolbar (DSP meter, Library, Settings) above the
+slots.
 
 Usage:
     python3 build/make_editor_thumb.py        # needs a server on PORT
@@ -34,11 +37,17 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "build"))
 
-from make_thumb_png import BG, CARD_BG, LIT, DIM, draw_text  # noqa: E402
+from make_thumb_png import draw_text  # noqa: E402
+
+# The pages' default "LCD" theme (patch_editor.html :root): pale blue ground,
+# dark ink, 3px borders with an offset shadow.
+BG = (0xA6, 0xD2, 0xF0)      # --lcd
+INK = (0x0B, 0x1A, 0x27)     # --ink
+SOFT = (0x34, 0x56, 0x6B)    # --ink-soft
 
 from PIL import Image  # noqa: E402
 
-PORT = 8766
+PORT = int(__import__("os").environ.get("PORT", 8766))
 PATCH_URL = f"http://127.0.0.1:{PORT}/tools/patch_editor.html"
 COVER_URL = f"http://127.0.0.1:{PORT}/tools/cover_editor.html"
 OUT = ROOT / "graphics" / "thumb_editors.png"
@@ -61,14 +70,9 @@ SLOTS = [
 ]
 
 COMMON_JS = """
-  const s = document.getElementById('theme');
-  if (s) {
-    const opt = [...s.options].find(o => /p4/i.test(o.value + o.textContent));
-    if (opt) { s.value = opt.value; s.dispatchEvent(new Event('change', {bubbles:true})); }
-  }
-  // The page's own CRT grain is switched off: the tape pass adds its own, and two
-  // independent grains stack into mush rather than doubling the effect.
-  document.documentElement.style.setProperty('--grain', '0');
+  // The pages as they open: default LCD theme. The fixed status bar at the
+  // bottom would cut across the slots, and file pickers render as OS widgets.
+  const nb = document.getElementById('noticeBar'); if (nb) nb.style.display = 'none';
   document.querySelectorAll('input[type=file]').forEach(e => e.style.visibility = 'hidden');
 """
 
@@ -148,30 +152,26 @@ def label(canvas: Image.Image):
     for y, x in zip(ys, xs):
         cy, cx = PANEL_Y - 150 + int(y), MARGIN + int(x)
         if 0 <= cy < canvas.height and 0 <= cx < canvas.width:
-            px[cx, cy] = LIT if y > 28 else DIM
+            px[cx, cy] = INK if y > 28 else SOFT
 
 
 def frame(canvas: Image.Image, img: Image.Image, x: int, y: int, title: str):
-    """Paste a panel with a 2px border and a caption bar above it."""
-    d = canvas.load()
+    """Paste a panel the way the pages draw theirs: a 3px ink border and a solid
+    offset shadow, with a caption above."""
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(canvas)
     w, h = img.size
-    for i in range(-2, 0):
-        for xx in range(x + i, x + w - i):
-            for yy in (y + i, y + h - i - 1):
-                if 0 <= xx < canvas.width and 0 <= yy < canvas.height:
-                    d[xx, yy] = DIM
-        for yy in range(y + i, y + h - i):
-            for xx in (x + i, x + w - i - 1):
-                if 0 <= xx < canvas.width and 0 <= yy < canvas.height:
-                    d[xx, yy] = DIM
+    d.rectangle([x + 6 - 3, y + 6 - 3, x + w + 6 + 2, y + h + 6 + 2], fill=INK)      # shadow
+    d.rectangle([x - 3, y - 3, x + w + 2, y + h + 2], fill=INK)                     # border
     canvas.paste(img, (x, y))
     g = np.zeros((30, 700), dtype=bool)
     draw_text(g, title, 0, 0, scale=4, spacing=4)
+    px = canvas.load()
     ys, xs = np.nonzero(g)
     for gy, gx in zip(ys, xs):
-        cy, cx = y - 34 + int(gy), x + int(gx)
+        cy, cx = y - 38 + int(gy), x + int(gx)
         if 0 <= cy < canvas.height and 0 <= cx < canvas.width:
-            d[cx, cy] = LIT
+            px[cx, cy] = INK
 
 
 def main() -> int:
@@ -188,7 +188,7 @@ def main() -> int:
     shoot(PATCH_URL,
           PATCH_JS.replace("__COMMON__", COMMON_JS)
                   .replace("__SLOTS__", str([list(s) for s in SLOTS])),
-          760, 1200, "#slots", a)
+          1000, int(1000 * PANEL[1] / PANEL[0]), None, a)
     # Wider viewport than the patch side: the cover editor's 128x64 canvas is drawn
     # at a large zoom, and at 760 CSS px the right-hand knob label falls off the edge.
     # The aspect is matched to PANEL so the scale-down lands exactly, no crop.

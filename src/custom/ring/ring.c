@@ -17,10 +17,10 @@ extern unsigned int _Fx_DLY_Ring_Info[];
 #define FXID     415u
 #define N        128u                          /* points around the ring */
 #define CX       64
-#define CY       22                            /* panel rows 0..44 */
-#define R0       12.0f                         /* base radius (rows) */
-#define RMIN     2.0f
-#define RMAX     21.0f
+#define CY       31                            /* full screen, rows 0..63 (0.02) */
+#define R0       17.0f                         /* base radius (rows) */
+#define RMIN     3.0f
+#define RMAX     30.0f
 #define ASPECT   1.4f
 #define FREE_RUN 1024u                       /* keep spinning at ~30 fps in silence */
 
@@ -58,6 +58,9 @@ void Fx_DLY_Ring(uintptr_t *ctx)
 
     visible = zv_visible(&st->z, ctx);
     zv_service(&st->z, info, visible);
+    /* Full screen: the firmware's knob boxes hidden, again every callback (they
+     * can come back after our first callback; idempotent, see Skull). */
+    zv_hide_knob_boxes(&st->z, info);
     if (params[0] < 0.5f || !visible) { st->phase = ARM; return; }
     if (st->z.phase != ZV_IDLE) return;
 
@@ -90,7 +93,7 @@ void Fx_DLY_Ring(uintptr_t *ctx)
     if (st->phase == COPY) {
         zv_copy(&st->z, RING_BG);
         for (i = 0; i < N; ++i) {               /* place the points: radius = base + signal */
-            float r = R0 + st->v[i] * st->size * 9.0f;
+            float r = R0 + st->v[i] * st->size * 13.0f;   /* x1.4 with the full-screen radius */
             unsigned a = (i * 2u + st->rot) & 255u;
             if (!(r >= RMIN)) r = RMIN;
             if (r > RMAX) r = RMAX;

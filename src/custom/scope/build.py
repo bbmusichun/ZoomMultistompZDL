@@ -6,7 +6,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "common"))
 from zvis_build import Canvas, raw, c_bytes, dials, encode_zoom_rle, build  # noqa: E402
 
-PLOT_H = 36                       # plot rows 0..35; labels at 38; knob boxes at 46
+PLOT_H = 64                       # full screen (0.03): plot rows 0..63, no knob row
 
 
 def background(title=False):
@@ -14,9 +14,8 @@ def background(title=False):
     c.rect(0, 0, 127, PLOT_H - 1)
     for x in range(4, 124, 4):
         c.px(x, PLOT_H // 2)
-    dials(c, ("TIME", "GAIN", "MODE"))
     if title:
-        c.draw_text("SCOPE", 64 - 19, 5, scale=2)
+        c.draw_text("SCOPE", 64 - 19, 8, scale=2)
     return c
 
 

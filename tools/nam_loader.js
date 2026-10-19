@@ -97,7 +97,7 @@ function remember(storage,report){
 // slot digits always end where the name begins: 'NAM1'+'0…' can never equal
 // slot 10's 'NAM10…').
 function fileName(slot,name){return 'NAM'+slot+shortName(name).slice(0,slot<10?4:slot<100?3:2)+'.ZDL';}
-async function convertNamed(model,template,manifest,slot,name,icon){
+async function convertNamed(model,template,manifest,slot,name,icon,opts={}){
  name=shortName(name);
  need(manifest.format===2,'Unsupported multi-capture engine.');
  let selected;try{selected=SlotIdentity.slotMeta(manifest,slot);}catch{selected=null;}
@@ -107,6 +107,19 @@ async function convertNamed(model,template,manifest,slot,name,icon){
  const result=await convert(model,template,{...manifest,...selected,format:1});
  const at=selected.name_offset;need(Number.isInteger(at)&&at>=76&&at+12<=result.bytes.length,'Invalid display name offset.');
  const display=pedalName(name);result.bytes.fill(0,at,at+12);result.bytes.set(new TextEncoder().encode(display),at);
+ // Eco+ (engine 0.26): the correction filter fitted for this capture (nam_response.js fitEcoEq).
+ if(Number.isInteger(selected.eco_eq_offset)){
+  const c=opts.ecoEq;need(Array.isArray(c)&&c.length===15&&c.every(Number.isFinite),'Eco+ needs its correction filter.');
+  const at=selected.eco_eq_offset;need(at>=76&&at+64<=result.bytes.length,'Invalid Eco+ offset.');
+  const view=new DataView(result.bytes.buffer,result.bytes.byteOffset);c.forEach((v,i)=>view.setFloat32(at+4*i,v,true));
+ }
+ // Split (engine 0.26): which output gets the amp; the other gets the dry guitar.
+ if(Number.isInteger(selected.split_route_offset)){
+  const route=opts.split;need(route===1||route===2,'Choose which output gets the amp.');
+  const at=selected.split_route_offset;need(at>=76&&at+16<=result.bytes.length,'Invalid split offset.');
+  const v=new DataView(result.bytes.buffer,result.bytes.byteOffset);   // amp factor of each side: L, R
+  v.setFloat32(at,route===1?1:0,true);v.setFloat32(at+4,route===2?1:0,true);
+ }
  // The pedal-screen picture: the chosen icon and the name (cover_art.js).
  if(manifest.cover){icon=icon||manifest.cover.default_icon;CoverArt.writeCover(result.bytes,selected,manifest.cover,name,icon);}
  Object.assign(result.report,{slot,fxid:selected.fxid,id:selected.id,shortName:name,icon:icon||null,displayName:display,name:'NAMLite-'+name,filename:fileName(slot,name),sha256:await sha256(result.bytes),note:'Only replaces the chosen capture slot. Other capture slots and original NAMLite are unchanged. Multiple simultaneous models may exceed pedal DSP capacity.'});

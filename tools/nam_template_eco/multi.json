@@ -1,188 +1,190 @@
 {
   "format": 2,
-  "engine": "NAMLite engine 0.25 Eco 6/8, exact interleaved rings, register-accumulated taps, fast I/O, Bass/Mid/Treb, Gate",
+  "engine": "NAMLite engine 0.26 Eco 6/8, exact interleaved rings, register-accumulated taps, fast I/O, Bass/Mid/Treb, Gate, soft limiter",
   "weights_count": 1871,
   "version_offset": 68,
-  "output_version": "0.25",
+  "output_version": "0.26",
   "sample_rate": 44100,
-  "dsp_cost": 177.0,
+  "dsp_cost": 181.0,
   "eco": true,
+  "eco_steps": 6,
+  "eco_plus": false,
   "slots": [
     {
       "slot": 1,
       "fxid": 900,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 526096,
       "file": "slot-1.bin",
-      "bytes": 29174,
-      "sha256": "a97cdebff681149e23bef593468fdaa79d921be2e405cd37893d6de1d9fe70f6"
+      "bytes": 30454,
+      "sha256": "51e3d1cdebb2e9575bce06242234f5a74c96d7cf7503b3f99b4db1e5ec7e493e"
     },
     {
       "slot": 2,
       "fxid": 901,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 657168,
       "file": "slot-2.bin",
-      "bytes": 29174,
-      "sha256": "67afb7d7c099a3ffc026c782a2c63102713e756e39c64174877ee974beb24f0e"
+      "bytes": 30454,
+      "sha256": "7eb4935a2a6bdce7fe4b348e50ab24fa602a6e24552c5d3d6309f8b478fd5ccf"
     },
     {
       "slot": 3,
       "fxid": 902,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 788240,
       "file": "slot-3.bin",
-      "bytes": 29174,
-      "sha256": "5dd34b0c0e88aceb05cedcaea6c898e2de89ddca7800d0ac9749370eff1b44e0"
+      "bytes": 30454,
+      "sha256": "18a92517f8f3cd347f99504036562990e1a4c422b60d591503266bdd35abbaec"
     },
     {
       "slot": 4,
       "fxid": 903,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 919312,
       "file": "slot-4.bin",
-      "bytes": 29174,
-      "sha256": "eca3ad54f6094110799042dbec109d66658b1fc9873aed18adcd0c2916a0f9d1"
+      "bytes": 30454,
+      "sha256": "1c2865002058dcc2950e125db9ca5bcd023dc02c9d3d1d926c93a896f8694179"
     },
     {
       "slot": 5,
       "fxid": 904,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 1050384,
       "file": "slot-5.bin",
-      "bytes": 29174,
-      "sha256": "09b6cacfb4ddabe1c12728aeea05e566b0b079296e42dea528c566e2760a37ee"
+      "bytes": 30454,
+      "sha256": "17a48ff0ee22bd4ebeba8bada44f92ec6b5e6090aff511c7d709dcc6624ba884"
     },
     {
       "slot": 6,
       "fxid": 905,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 1181456,
       "file": "slot-6.bin",
-      "bytes": 29174,
-      "sha256": "9399b37272579c3a0f9d5c8f969eb8b68f53ea66add880a99c0926ab17503474"
+      "bytes": 30454,
+      "sha256": "075f756f789a1a8da99ae546eec83d3f7a8df7a9db1c78bf194d38855482e2af"
     },
     {
       "slot": 7,
       "fxid": 906,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 1312528,
       "file": "slot-7.bin",
-      "bytes": 29174,
-      "sha256": "bea2d1d8341c4d3cee5a7189e4d4dafae7963461cb55a1103237ef1c14f86dda"
+      "bytes": 30454,
+      "sha256": "0b916f5f0241a45b7247094fd40ac827693d2fe4aa8aeae39188966cafeabd79"
     },
     {
       "slot": 8,
       "fxid": 907,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 1443600,
       "file": "slot-8.bin",
-      "bytes": 29174,
-      "sha256": "4358fdca2c3647d45e1a6ca62e9620e8a0a5c94778b006eec704deb6c9ea16ad"
+      "bytes": 30454,
+      "sha256": "052567f877f4f652bd657d975a22f80dcaca97057d943a326015cef83285f8b0"
     },
     {
       "slot": 9,
       "fxid": 950,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 7079696,
       "file": "slot-9.bin",
-      "bytes": 29174,
-      "sha256": "9bf8d8112303343ba22ae35a058231c51a41c147540fdb7af8d02b5c1f0b9346"
+      "bytes": 30454,
+      "sha256": "9e1e6e611af12b4125495c22059748ddcb1571f36db84644137375ec0768e8cf"
     },
     {
       "slot": 10,
       "fxid": 951,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 7210768,
       "file": "slot-10.bin",
-      "bytes": 29170,
-      "sha256": "94c6fc3d8802b85baf85b20fd7fb588796204c3ddc0bbb2d901fb73f5d8925a5"
+      "bytes": 30450,
+      "sha256": "339f8f5b4ea69f153bb8adbc82339407094f405874256884d27d83b5384a6e11"
     },
     {
       "slot": 11,
       "fxid": 952,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 7341840,
       "file": "slot-11.bin",
-      "bytes": 29170,
-      "sha256": "040c64997e75b6030d4da49d98ee767c8af7a0e958b4418b4b20528921650cbf"
+      "bytes": 30450,
+      "sha256": "9ac0df41bdbe181f906f133cd9186bb710d25ca87b505f5ad263fd63d2728ddf"
     },
     {
       "slot": 12,
       "fxid": 953,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 7472912,
       "file": "slot-12.bin",
-      "bytes": 29170,
-      "sha256": "056ecf3c44b70ab9d5451277c602f8ed1728672be4f745e903e04ce555fb7fd7"
+      "bytes": 30450,
+      "sha256": "87c3bad9901cfc676f56156c61f64ef475123db12befe6e9dd422b7ec6ee9460"
     },
     {
       "slot": 13,
       "fxid": 954,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 7603984,
       "file": "slot-13.bin",
-      "bytes": 29170,
-      "sha256": "7344b2e1b1c1acde889ed339b84043546b0a213baff6cf3766bcb2d63d0a54c8"
+      "bytes": 30450,
+      "sha256": "03d93f1c817832cc346e426ae7d3106ac362622a86c08f918bc09ca100a2a664"
     },
     {
       "slot": 14,
       "fxid": 955,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 7735056,
       "file": "slot-14.bin",
-      "bytes": 29170,
-      "sha256": "a5bf9c3fad80f25c0f78c699c61263b924db9457d8383b123d595ba86cb163ce"
+      "bytes": 30450,
+      "sha256": "3c5c1e2791ceeaaeed7eb1fa03d51a820010c4afb2cfb8e31f761b82e9318330"
     },
     {
       "slot": 15,
       "fxid": 956,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 7866128,
       "file": "slot-15.bin",
-      "bytes": 29170,
-      "sha256": "3f2e33a442821b8a4c7c66124b2579cd3701dbcfb9c64dae5d94ecd780e0eea8"
+      "bytes": 30450,
+      "sha256": "d74fe3000c911753dcbf471c3c9b030b4fc1efdfe423907fb16600cc93608afd"
     },
     {
       "slot": 16,
       "fxid": 957,
-      "weights_offset": 15284,
-      "name_offset": 14620,
-      "picture_offset": 13548,
+      "weights_offset": 16564,
+      "name_offset": 15900,
+      "picture_offset": 14828,
       "id": 7997200,
       "file": "slot-16.bin",
-      "bytes": 29170,
-      "sha256": "f9f479028a870968894821328a244f7a5d9aefea91df86b37a07792cc88fabc3"
+      "bytes": 30450,
+      "sha256": "f83ef9be0fa6e1d9f36bedf60b8ecf309154df87c0c9adaf2fdced456f23ce27"
     }
   ],
   "generated": {
@@ -190,27 +192,27 @@
     "last": 216,
     "fxid_offset": 483,
     "file": "gen-base.bin",
-    "bytes": 29170,
-    "sha256": "5c8a651632ed21e6e253aaba1260bce23801e4c61f1d3bcc1a66ade6da85800f",
+    "bytes": 30450,
+    "sha256": "abe9ec8960c67c5c7c0734df4654a53cf89d0c6eec8e05075fe379214c5b84dd",
     "ident_prefix": "NAMS",
     "ident_digits": 3,
     "ident_offsets": [
-      14624,
-      27731,
-      28082,
-      28098
+      15904,
+      29011,
+      29362,
+      29378
     ],
     "reference_sha256": {
-      "17": "5c8a651632ed21e6e253aaba1260bce23801e4c61f1d3bcc1a66ade6da85800f",
-      "18": "188c391c7c8c70aec00711a7d116fa27f3b15884628679dc4e562c6d76a345ed",
-      "99": "ed6c3c0a728bfaa4c90a4c7282ec1c13299445daccee3290248bb42a87c80e40",
-      "100": "df6ec4f6e62e23279b801ae1208d610fbe2a722de9f47dd70ee30cad92007029",
-      "150": "231e9c59f41c19505e06b01d5ba00abe5a1befda6b739801eb3dd856838f7c14",
-      "216": "f8f15cb16a1588614374bc6b447be3b2ee66c15ba77ebabfaa180d043b657b3f"
+      "17": "abe9ec8960c67c5c7c0734df4654a53cf89d0c6eec8e05075fe379214c5b84dd",
+      "18": "d98fc99366c772756c8a35a54068ddded88af1063e5013a3bb80ab8df2adbe96",
+      "99": "ff620d0e9d2c994b95a9f33ff4b9fcf39436a98cf267c8160fa35a414561a3f8",
+      "100": "3f56d67a6580a0f496c714726d5fd8a19964b5b11547570dcb18a849b2f3894f",
+      "150": "bbab7b98084c549a3a9eb5554f927764dd224fd5cb51e2adbc988c1ce4fea45f",
+      "216": "fbca31cec603418df704550c3d538f51e7d2bcb0aae5664fbcb9df22f8c2f056"
     },
-    "weights_offset": 15284,
-    "name_offset": 14620,
-    "picture_offset": 13548
+    "weights_offset": 16564,
+    "name_offset": 15900,
+    "picture_offset": 14828
   },
   "cover": {
     "kind": "NAM",

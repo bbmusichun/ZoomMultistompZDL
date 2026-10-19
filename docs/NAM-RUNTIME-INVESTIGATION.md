@@ -647,3 +647,141 @@ no crackle.** Pedal DSP limit measured with pass-through cost probes: 224.4
 accepted, 228.4 refused. Costs now: full 194 / Eco 7/8 188 / Eco 6/8 177 /
 CabIR 10; PE meter budget 228. Declared cost, pedal admission and real load
 agree on every chain tested so far.
+
+### 2026-10-19: 16-bit taps trial (no-go), Eco 0.26 resampling, soft limiter
+
+Emulated callback cycles, smokey (44.1 kHz), flat EQ, median. Builds from
+`tools/nam_prototype/package_eq_templates.py` (engine 0.26, uncommitted
+templates) and `tools/nam_prototype/q16_trial.py`.
+
+**16-bit taps (q16_trial.py): not worth building.** The dilated convolutions
+in int16 pairs with DOTP2 into 32-bit accumulators, the rest float. The tap
+loop's core improves (ii 13 vs 19 per tap for 4 samples), but packing the
+history (SPINT + SPACK2 per channel per sample) and converting back cost
+more: whole NAMLite 17,008 vs 15,117, kernel alone 16,241 vs 14,589. On the
+host the q16 kernel matches float to -74 dB, and on TI the bare kernel
+matches its host build to -81 dB. A fully tuned version (DDOTP4, one
+8-sample group) is projected at 10-20% saved, below the 25% bar. Inside
+NAMLite the q16 network read an all-zero input: see the restrict finding
+below.
+
+**Eco 0.26: cubic, evenly spaced resampling** (`src/hardware_probes/namlite/nam_resample.h`).
+0.25 sampled the input at floor(8i/N) (uneven) with a 2-tap average and
+interpolated the output linearly. Identity-network model, 6/8, -6 dBFS
+sine, worst spur:
+
+| Tone | 0.25 | Even + linear | Cubic both ways (0.26) |
+|---|---|---|---|
+| 1 kHz | -33.5 dB | -41.6 dB | -79 dB |
+| 3 kHz | -22.8 dB | -31.2 dB | -53 dB |
+| 8 kHz | -11 dB | -18 dB | -24.5 dB |
+
+The 0.26 version also keeps 2.8 dB more level at 8 kHz. Cost: Eco 6/8
+14,013 vs 0.25's 13,682 (+331). TI vs host 4.7e-10.
+
+**Soft output limiter (0.26):** exact below 0.75, then d*u/(1+u) toward
++-1 (no corner), replacing the hard clip at 1.0. It runs in its own loop,
+because the mix loop cannot be pipelined (the mix ramp) and any work inside
+it costs its full latency. Full rate 14,974 vs 15,117 (-143). TI vs host
+4.7e-10 (flat EQ and Bass 68 / Mid 30 / Treb 66 / Gate 20).
+
+**Restrict hazard (latent in the shipping engine).** The generated
+`nam_block` declares `input`/`output` restrict. Once inlined into NAMLite,
+the TI compiler may move its reads of `net.input` above stores made just
+before the call, and stores into `net.output` past reads just after.
+- Unrolled copy loops into `net.input` / out of `net.output` (Eco) gave TI
+  output 0.26 away from the host. The same code as rolled loops is exact.
+- The q16 network read zeros.
+- 0.25 is exact only by the current schedule. Harden it: no restrict on
+  those two pointers, or copy through the kernel's own arrays.
+
+**Deeper Eco, measured (cubic resampling), each vs full rate in dB, pink noise:**
+
+| Hz | 100 | 1k | 2k | 3k | 4k | 5k | 8k | 10k | Cycles |
+|---|---|---|---|---|---|---|---|---|---|
+| 6/8 | +0.3 | +0.3 | +0.2 | -0.3 | -2.3 | -4.2 | -3.1 | -6.5 | 14,013 |
+| 5/8 | | | | | | | | | 13,540 (no fast count-5 path) |
+| 4/8 | +0.3 | +0.5 | -0.3 | -4.6 | -7.5 | -8.0 | -13.6 | -15.3 | 10,978 (-27%) |
+
+4/8 is the only real saving, and it changes the tone from 3 kHz up. A
+per-capture correction EQ fitted in the loader (it now has the network,
+`tools/nam_response.js`) could take most of the magnitude loss back.
+
+### 2026-10-19: 48 kHz true rate: not feasible on this DSP (code removed)
+
+Goal: play a 48 kHz capture at 48 kHz. That is 160 network steps per 147
+input samples, so 8 or 9 steps per 8-sample callback (8.707 on average).
+
+**What was built (uncommitted, removed).**
+- The kernel generator took a `block` size: rings (k-1)*d + 9, a 9-slot
+  mirror, I/O arrays of 10. At block 8 the output was byte-identical to
+  today's kernel.
+- Count 9 first used a 5+4 fast path, which made the file 33.9 KB, over the
+  size the pedal loads. It then used one 4-sample body run at offsets 0 and
+  4, plus a 1-sample tail.
+- The resampler was cubic at exact rational positions (`ph` in 1/160 sample,
+  output cycle position in 1/147). A Python model with an identity network
+  showed: indices always in bounds with two steps to spare; level within
+  0.5 dB to 8 kHz; spurs -80 dB at 100 Hz, -66 dB at 3 kHz, -36 dB at
+  8 kHz; ~4 samples of latency.
+- The block-9 kernel was bit-exact against `generate.py`'s reference with
+  8/9 blocks, and TI matched host to 2e-9.
+
+**Why it was dropped: cost.**
+
+| Build | Median cycles | Max cycles |
+|---|---|---|
+| Full rate (0.26) | 14,974 | 16,578 |
+| 48 kHz, ideal (x8.707/8) | ~16,300 | ~18,000 (declared ~215 of ~225) |
+| 48 kHz, as built | 23,088 | 24,868 |
+| 48 kHz layout run at a fixed 8 steps | 18,195 | |
+
+- In the fixed-8 build, the resampler loops ran at ii 44 (aliasing, fixable).
+- The 9th step costs a whole extra pass over the 23 layers for one sample
+  (~4,900 cycles on the 70% of callbacks that need it).
+- Even a perfect version would declare ~215 and leave nothing but a cab
+  beside it. As built it is ~290.
+
+**Tone-match EQ instead? Only partly.** Measured with `nam_response.js`,
+"as trained" (the curve x48000/44100) against "on the pedal":
+- An amp-only 48 kHz capture (smokey) is within ±1 dB, so there is nothing
+  worth fixing.
+- A capture with the cab built in (BRIT50 "CAB") is off by up to ±5 dB:
+  -3 dB at 100 Hz, -5 dB at 2-3 kHz, +4 dB at 6-8 kHz. Its resonances move
+  with the rate, and 3 or 4 fitted peaking filters still leave ±3-4 dB at
+  2-3 kHz. A cab-style FIR fit (CabIR, ~10 DSP points) could follow it more
+  closely.
+- **Practical route:** use an amp-only 48 kHz capture plus CabIR. The cab
+  loader resamples 48 kHz IRs properly, and the amp's own shift is small.
+
+**Hardware (2026-10-19):** the 0.26 builds (full NAM210fu, Eco NAM211ec, Eco+
+NAM212ec, all from Marlboro Smokey) and the split test (NAM7spli) all load
+and play. The owner hears Eco+ as clearly worse than full rate; it stays as a
+lower-DSP option.
+
+### 2026-10-19: split outputs, and a Ziddle bug
+
+**Split B.** One output gets the amp, the other the dry guitar, with knob 3 as
+the dry side's level (-24..+24 dB). An earlier test (NAM7spli) used an 8th knob
+for the side; a 9th would not fit the size cap, so the side is now chosen in
+the loader and written into the file as two factors. A route NUMBER read with a
+float->int conversion and compares worked too, but the factors need neither.
+
+**The emulator said the amp side was silent; the pedal plays it.**
+- Probing in Ziddle (a write watch on the arena plus a per-instruction trace of
+  one callback): the soft-limiter loop loaded its `net.gain` pointer from a
+  stack slot and got 1.0f instead, so it read "gain" from 0x3F800000 = 0.
+- The slot was written by `STW.D2T1 A20,*B15[20]`, a 16-bit Dstk instruction
+  under `SPMASK L1,L2,D2` in the prolog of the input loop's SPLOOP. Masked, it
+  must run once. Ziddle ran it on all 8 iterations, with A20 already reused.
+- Cause: Ziddle's `compact_unit` took Dstk's DATA side (bit 12) as its unit
+  side, D1, so a D2 mask missed it. Dstk is always .D2. Fixed in the local
+  Ziddle copy (`product/cpu/src/insn/mod.rs`).
+- Why it came and went: any change to the state layout or code moved stack
+  slots and registers, so the replayed store sometimes wrote the right pointer
+  (harmless) and sometimes a float.
+- The split build still differs from the host in the fixed emulator (amp side
+  near silent, max diff ~0.2-0.3), but plays on the pedal. A second emulator gap
+  of this kind is likely; not chased further. Removing `restrict` from the
+  kernel's input/output pointers (tried first) changed nothing and was reverted.
+

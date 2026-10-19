@@ -1,13 +1,17 @@
 # Zoom MultiStomp ZDL
 
-<p align="center"><img src="graphics/14-console-dithered.png" width="900" alt="A Zoom MS-70CDR mounted in a vintage lab console, drawn in 1-bit dither like the pedal screen"></p>
+<p align="center"><img src="graphics/15-console-phosphor.jpg" width="900" alt="A Zoom MS-70CDR mounted in a vintage lab console, in the pale-blue phosphor of the pedal-screen artwork"></p>
 
 Custom `.ZDL` effects for Zoom MultiStomp pedals, plus the reverse-engineered
 toolchain used to build them — no Zoom SDK required.
 
 This was a good amount of work and tokens, please consider to [Sponsor this project](https://github.com/sponsors/themanro) or [Buy me a coffee](https://buymeacoffee.com/sz0kfixkct)
 
-<p align="center"><img src="graphics/thumb_effects.png" width="820" alt="22 custom effects for the Zoom MS-70CDR"></p>
+**Video tutorial** — what this is, how it works, and turning a NAM capture and a cab IR into effects for the pedal:
+
+<p align="center"><a href="https://youtu.be/gNDif0cOdFk"><img src="graphics/tutorial-video.jpg" width="720" alt="Watch the video tutorial on YouTube: a NAM capture running on a Zoom MS-70CDR"></a></p>
+
+<p align="center"><img src="graphics/thumb_effects.png" width="900" alt="Every effect's pedal screen: the 22-effect pack, the experimental looper and live screens, a NAM and a CAB example, and the included Matujuice pack"></p>
 
 **New here?** This is a pack of 22 extra effects plus a free browser-based
 [Patch Editor](https://themanro.github.io/ZoomMultistompZDL/tools/patch_editor.html)
@@ -58,8 +62,9 @@ compiler, nothing uploaded anywhere.
 1. Open the [NAM + Cab Loader](tools/nam_loader.html) (Patch Editor
    **Settings → Custom NAM captures**, with the local editor running).
 2. **Amp:** drop in an A2 Lite `.nam` file, give it a short name, pick an
-   icon and a slot, download the `.ZDL` and its thumbnail. Tick **Eco** if you
-   want it lighter on the DSP (see below).
+   icon and a slot, download the `.ZDL` and its thumbnail. Pick **Eco** or
+   **Eco+** if you want it lighter on the DSP (see below). Pick a **Split**
+   output to get the amp on one output and your clean guitar on the other.
 3. **Cab:** drop in an IR `.wav` (44.1 or 48 kHz). The loader fits it to a
    small filter the pedal can afford and gives you a `.ZDL`; pick an icon per
    cab.
@@ -77,11 +82,19 @@ sound). Filenames encode the slot so they never collide: `NAM4smok.ZDL`,
 name you typed and one of 21 icons (amp, cab, speaker, tube, mic, skull,
 flame…); the Effect Manager thumbnail the loader gives you matches it.
 
+<table>
+<tr>
+<td align="center"><img src="graphics/nam-example.png" width="300" alt="A NAM capture named SMOKEY with the amp icon"><br>A capture, <code>smokey</code>, amp icon</td>
+<td align="center"><img src="graphics/cab-example.png" width="300" alt="A cab named 4X12 with the cabinet icon"><br>A cab, <code>4x12</code>, cabinet icon</td>
+</tr>
+</table>
+
 **Knobs.**
 
 | Effect | Knobs |
 |---|---|
 | NAM | Input, Output, Mix, Bass, Mid, Treb, Gate (noise gate; 0 = off) |
+| NAM, split | Input, Output, **Dry** (the dry side's level: 50 = unchanged, -24 to +24 dB), Bass, Mid, Treb, Gate |
 | CabIR | Mix, Level, Reso (low-end resonance), Pres (presence) |
 
 **DSP budget.** The pedal refuses a patch (shows `DSP full`) once the summed
@@ -92,7 +105,8 @@ pedal will refuse it).
 | Effect | Declared cost | Notes |
 |---|---|---|
 | NAM, full rate | 194 | Best sound. Leaves room for one light effect (a drive, a cab). |
-| NAM, Eco | 177 | Runs the model on 6 of every 8 samples. Slightly darker top end. |
+| NAM, Eco | 181 | Runs the model on 6 of every 8 samples. Within 0.3 dB of full rate below 3 kHz, a little less treble above. |
+| NAM, Eco+ | 152 | Half rate, with a correction EQ the loader fits to each capture. Sounds noticeably worse than full rate, but leaves room for more effects. For amp-only captures into a cab. |
 | CabIR | 10 | 32-tap filter + 6 EQ bands; fits next to any NAM. |
 
 **What works.** A2 Lite captures only (the small standard NAM architecture).
@@ -243,18 +257,84 @@ pedal actually shows.
 > subset, back up first, and flash one at a time. Run heavy effects (Microlm,
 > Galactic, Spool) one per patch.
 
+## Matujuice effects pack (included)
+
+Twelve more effects, made by **Luca Matturro**
+([matujuice](https://github.com/matujuice)) on this project's toolchain and
+included here unmodified under his MIT licence:
+[zoom-ms-zdl-effects-pack](https://github.com/matujuice/zoom-ms-zdl-effects-pack)
+release v1.5. The files in [dist/](dist/) match that release's checksums.
+v1.5 has its own Tempo knobs, so it runs on stock firmware; later releases
+(v1.6+) take their tempo from [MIDISTOMP](https://github.com/matujuice/zoom-ms-midistomp)
+and are on his page. His full guide and licence are in
+[dist/matujuice/](dist/matujuice/README.md); in Patch Editor they are listed
+under his name. Screens below are his artwork, as the pedal shows it.
+
+<table>
+<tr>
+<td align="center"><img src="graphics/wavefold.png" width="220" alt="WaveFold"></td>
+<td align="center"><img src="graphics/dualshft.png" width="220" alt="DualShft"></td>
+<td align="center"><img src="graphics/choral.png" width="220" alt="Choral"></td>
+<td align="center"><img src="graphics/eugate.png" width="220" alt="EuGate"></td>
+</tr>
+<tr>
+<td align="center"><img src="graphics/dubsiren.png" width="220" alt="DubSiren"></td>
+<td align="center"><img src="graphics/sgnl.png" width="220" alt="SGNL"></td>
+<td align="center"><img src="graphics/scrub.png" width="220" alt="Scrub"></td>
+<td align="center"><img src="graphics/griddly.png" width="220" alt="GridDly"></td>
+</tr>
+<tr>
+<td align="center"><img src="graphics/synceq.png" width="220" alt="SyncEQ"></td>
+<td align="center"><img src="graphics/breather.png" width="220" alt="Breather"></td>
+<td align="center"><img src="graphics/dirtbox.png" width="220" alt="DirtBox"></td>
+<td align="center"><img src="graphics/sweep.png" width="220" alt="Sweep"></td>
+</tr>
+</table>
+
+| Effect | What it does |
+|---|---|
+| **WaveFold** | Wavefolder (a Buchla 259 fold curve). |
+| **DualShft** | Tempo-synced dual pitch shifter. |
+| **Choral** | Pitch-tracked choir. |
+| **EuGate** | Euclidean rhythm gate. |
+| **DubSiren** | Dub siren with tape echo. |
+| **SGNL** | Broken digital line: glitches, dropouts, codec damage. |
+| **Scrub** | Scrub through the last seconds, freeze where you stop. |
+| **GridDly** | One tempo-synced delay with six engines. |
+| **SyncEQ** | EQ that passes the bar sync on to the effects after it. |
+| **Breather** | Tempo-synced pump with a reverb. |
+| **DirtBox** | Distortion box for acid lines: seven classic pedal models, EQ, noise reducer. |
+| **Sweep** | Phaser, flanger and filter in one. |
+
+Made for synths and drum machines as much as guitar. Their IDs are 480 and
+485-496. If you installed a very early Howl build (ID 480), reinstall Howl from
+dist/ before adding DualShft.
+
 ## Experimental: a looper and live screens
 
 These run on the stock MS-70CDR firmware. Their screens need firmware 2.10;
 on any other firmware they keep working as audio effects, and the screen
-effects simply pass the sound through.
+effects simply pass the sound through. The live screens use the whole display:
+their knobs are on the pedal's knob pages, as usual.
+
+<table>
+<tr>
+<td align="center"><img src="graphics/loop.png" width="220" alt="Loop"></td>
+<td align="center"><img src="graphics/scope.png" width="220" alt="Scope"></td>
+<td align="center"><img src="graphics/spectrum.png" width="220" alt="Spectrum"></td>
+</tr>
+<tr>
+<td align="center"><img src="graphics/ring.png" width="220" alt="Ring"></td>
+<td align="center"><img src="graphics/skull.png" width="220" alt="Skull"></td>
+</tr>
+</table>
 
 | Effect | What it does |
 |---|---|
 | **[Loop](src/custom/loop/README.md)** | A looper on the footswitch: record, play, overdub, stop, clear, with undo/redo. About 5 s, or about 23 s in experimental Long mode. Its screen shows the state, the time and the loop's waveform. |
-| **Scope** | A live oscilloscope of your signal on the effect's screen. |
-| **Spectrum** | A live spectrum analyzer, 40 Hz – 16 kHz, with peak hold. |
-| **Ring** | A rotating ring that follows the signal. |
+| **Scope** | A live oscilloscope of your signal, full screen: waveform, or XY (left against right). |
+| **Spectrum** | A live spectrum analyzer, 40 Hz – 16 kHz, with peak hold, full screen. |
+| **Ring** | A rotating ring that follows the signal, full screen. |
 | **Skull** | A shaded 3D skull that reacts to your playing, idles with animations when you stop, and explodes at the loudest peaks. |
 
 They aren't in [dist/](dist/) yet: build them from `src/custom/<name>/build.py`.
@@ -598,7 +678,7 @@ them beside the repo, treat them as read-only references.
 |---|---|
 | [MS StompCtrl](https://github.com/1njected/ms-stompctrl) | Browser-only patch editor and backup tool for the **MS-100BT**, over Bluetooth in Chrome ([open it](https://1njected.github.io/ms-stompctrl/)). Reads, edits and writes patches, backs up the bank, and installs `.ZDL` files. A user has run four of this repo's effects on the MS-100BT ([#4](https://github.com/themanro/ZoomMultistompZDL/issues/4)); back up first and report what you find. MIT. |
 | [MIDISTOMP](https://github.com/matujuice/zoom-ms-midistomp) | Custom firmware for the original MultiStomps: MIDI Program Change, CC control of every knob, MIDI clock with Start/Stop, a tap-tempo screen and footswitch-hold options. Installed by flashing a modified Zoom updater (riskier than an Effect Manager install). Tested on an MS-60B running MS-50G 3.10; MS-50G and MS-70CDR untested. MIT. |
-| [Matujuice ZDL effects pack](https://github.com/matujuice/zoom-ms-zdl-effects-pack) | Free custom effects built on this toolchain, made for synths and drum machines: wavefolder, pitch shifters, a pitch-tracked choir, Euclidean gate, dub siren, glitch, scrub/freeze, distortion, pump, delay, sweep. Release v1.5 has its own Tempo knobs; v1.6 and later follow MIDISTOMP's tempo (120 BPM on stock firmware). Its effect IDs 480, 490 and 496 overlap an old Howl ID and two of our test probes, so don't install those alongside it. MIT. |
+| [Matujuice ZDL effects pack](https://github.com/matujuice/zoom-ms-zdl-effects-pack) | Luca Matturro's custom effects, built on this toolchain, made for synths and drum machines. v1.5 is [included here](#matujuice-effects-pack-included); v1.6 and later follow MIDISTOMP's tempo (120 BPM on stock firmware). MIT. |
 | [repeat98/ZoomMultistompZDL](https://github.com/repeat98/ZoomMultistompZDL) | The upstream ZDL toolchain this fork started from. |
 | [Leemuzhko/HYBRID-IR](https://github.com/Leemuzhko/HYBRID-IR) | The short-filter-plus-EQ cab idea behind CabIR. |
 | [Ziddle](https://berbasoft.com/ziddle/) | C674x emulator used to test ZDLs before they touch hardware. |
@@ -629,7 +709,11 @@ That grant deliberately stops there. The upstream toolchain this is forked from,
 [repeat98/ZoomMultistompZDL](https://github.com/repeat98/ZoomMultistompZDL),
 publishes no licence file, so inherited material stays under its author's
 default copyright and is not relicensed here. Airwindows DSP in
-`src/airwindows/` is MIT by Chris Johnson/Airwindows under its own terms. Zoom
+`src/airwindows/` is MIT by Chris Johnson/Airwindows under its own terms. The
+Matujuice effects in `dist/` (Breather, Choral, DirtBox, DualShft, DubSiren,
+EuGate, GridDly, SGNL, Scrub, Sweep, SyncEQ, WaveFold), and the renders of
+their screens in `graphics/` and the effects overview, are MIT by Luca
+Matturro; his licence is in [dist/matujuice/LICENSE](dist/matujuice/LICENSE). Zoom
 firmware, stock effect binaries and the TI toolchain belong to Zoom Corporation
 and Texas Instruments; they are referenced for interoperability and
 reverse-engineering research only, and none of their code is redistributed

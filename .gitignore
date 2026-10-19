@@ -54,34 +54,6 @@ dist/C[0-9][0-9]*
 build/capture-art/*.ZDL
 # local test-host build artifact
 build/tonic-validation/host.so
-# Third-party effects staged locally for Effect Manager: Matujuice Zoom MS ZDL
-# effects pack v1.5 (github.com/matujuice/zoom-ms-zdl-effects-pack, MIT).
-# Not ours to ship from this repo.
-dist/Breather.ZDL
-dist/Choral.ZDL
-dist/DirtBox.ZDL
-dist/DualShft.ZDL
-dist/DubSiren.ZDL
-dist/EuGate.ZDL
-dist/GridDly.ZDL
-dist/SGNL.ZDL
-dist/Scrub.ZDL
-dist/Sweep.ZDL
-dist/SyncEQ.ZDL
-dist/WaveFold.ZDL
-dist/Breather.png
-dist/Choral.png
-dist/DirtBox.png
-dist/DualShft.png
-dist/DubSiren.png
-dist/EuGate.png
-dist/GridDly.png
-dist/SGNL.png
-dist/Scrub.png
-dist/Sweep.png
-dist/SyncEQ.png
-dist/WaveFold.png
-dist/matujuice/
 # Redraw probe (test A, docs/pedal-research/animated-covers.md): staged for upload, never shipped
 dist/Redraw.ZDL
 dist/Redraw.png

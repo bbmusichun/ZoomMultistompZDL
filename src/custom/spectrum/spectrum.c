@@ -17,7 +17,7 @@ extern unsigned int _Fx_DLY_Spectrum_Info[];
 #define MAGIC  0x53504543u                     /* 'SPEC' */
 #define FXID   468u
 #define HALF   512u                            /* complex FFT size */
-#define BOT    (SPEC_PLOT_H - 2)               /* bars stand on row 34 */
+#define BOT    (SPEC_PLOT_H - 2)               /* bars stand on row 58 */
 #define BAR_H  (SPEC_PLOT_H - 3)               /* up to row 1 */
 #define REF_DB 48.165f                         /* 10*log10(|X|^2) of a full-scale sine, Hann, N = 1024 */
 #define HOLD   15u                             /* frames a peak dot stays before it falls */
@@ -110,6 +110,9 @@ void Fx_DLY_Spectrum(uintptr_t *ctx)
 
     visible = zv_visible(&st->z, ctx);
     zv_service(&st->z, info, visible);
+    /* Full screen: the firmware's knob boxes hidden, again every callback (they
+     * can come back after our first callback; idempotent, see Skull). */
+    zv_hide_knob_boxes(&st->z, info);
     if (!on || !visible) { st->phase = CAP; st->n = 0; return; }   /* off or not on screen: no work */
 
     if (st->phase == CAP) {                    /* 8 samples a callback, windowed, bit-reversed */

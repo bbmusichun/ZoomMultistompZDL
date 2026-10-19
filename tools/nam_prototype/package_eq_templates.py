@@ -45,7 +45,7 @@ from capture_art import picture as capture_picture
 from gen_init_materialize import _read_elf_sections
 from extract_effect_db import parse_zdl
 
-VERSION = '0.25'
+VERSION = '0.26'
 TONE_PARAMS = [dict(name='Bass', max=100, default=50), dict(name='Mid', max=100, default=50),
                dict(name='Treb', max=100, default=50), dict(name='Gate', max=100, default=0)]
 N_WEIGHTS = 1871
@@ -57,7 +57,7 @@ SLOTS = 16
 # 7/8 14,658 / 6/8 13,841 emulated). Pedal limit measured with pass-through
 # probes (2026-10-06): 194 + Great Muff (224.4) accepted, 198 + Muff (228.4)
 # refused -> limit in (224.4, 228.4], not the ~230 reported elsewhere.
-DSP_COST = {8: 194.0, 7: 188.0, 6: 177.0}
+DSP_COST = {8: 194.0, 7: 188.0, 6: 181.0, 4: 152.0}   # 0.26: Eco 6/8 +331 cycles (cubic resampling); 4 = Eco+
 
 
 def nam_fxid(slot):
@@ -74,12 +74,16 @@ def main():
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument('seed', type=Path)
-    ap.add_argument('--steps', type=int, default=8, choices=[6, 7, 8])
+    ap.add_argument('--steps', type=int, default=8, choices=[4, 6, 7, 8], help='4 = Eco+ (with --eco-eq)')
     ap.add_argument('--out', type=Path, default=ROOT / 'tools/nam_template')
+    ap.add_argument('--eco-eq', action='store_true',
+                    help='Eco+: three correction biquads after the network, fitted and written by the loader (NAM_ECO_EQ)')
+    ap.add_argument('--split', action='store_true',
+                    help='split (NAM_SPLIT): amp on one output, dry on the other (side written by the loader); knob 3 = Dry level')
     a = ap.parse_args()
     seed = a.seed.resolve()
     eco = a.steps < 8
-    work = ROOT / (f'build/probes/namlite/template-{VERSION}' + ('-eco' if eco else ''))
+    work = ROOT / (f'build/probes/namlite/template-{VERSION}' + ('-eco' if eco else '') + ('-eq' if a.eco_eq else '') + ('-split' if a.split else ''))
     generate_block(seed, work)
     exact_rings.apply(work, interleave=True, regacc=True, extra_counts=(a.steps,) if eco else ())
     tone_stack.write_table(work, half=True)
@@ -88,6 +92,8 @@ def main():
     obj = work / 'namlite.obj'
     subprocess.run([str(ti / 'bin/cl6x'), '--c99', '-O2', '-mv6740', '--abi=eabi', '--mem_model:data=far',
                     '--fp_mode=strict', '--fp_reassoc=off', '-DNAM_TONE_STACK', '-DNAM_GATE', '-DNAM_FAST_IO',
+                    *(['-DNAM_SPLIT'] if a.split else []),
+                    *(['-DNAM_ECO_EQ'] if a.eco_eq else []),
                     *([f'-DNAM_RATE_STEPS={a.steps}'] if eco else []),
                     f'--include_path={ti}/include', f'--include_path={ROOT}/src/airwindows/common',
                     f'--include_path={ROOT}/src/hardware_probes/namlite',
@@ -104,7 +110,11 @@ def main():
     assert len(weights) == N_WEIGHTS * 4
 
     m = json.loads((ROOT / 'src/hardware_probes/namlite/manifest.json').read_text())
-    params = params_from_manifest(m['params'] + TONE_PARAMS)
+    base = m['params']
+    if a.split:      # knob 3 is the dry side's level in split files
+        base = [dict(p, name='Dry', default=50) if p['name'] == 'Mix' else p for p in base]
+    extra = []
+    params = params_from_manifest(base + TONE_PARAMS + extra)
     out = a.out
     out.mkdir(parents=True, exist_ok=True)
     picture = capture_picture('NAM')
@@ -135,17 +145,29 @@ def main():
         from zdl_size_guard import check as size_check
         size_check(p)                                  # over-size templates froze the pedal
         entry = parse_zdl(p)
-        assert entry['fxid'] == fxid and len(entry['params']) == 7
+        assert entry['fxid'] == fxid and len(entry['params']) == 7 + len(extra)
+        extra_at = {}
+        if a.split:                                    # where the loader writes the routing
+            import struct
+            pattern = struct.pack('<4f', 1, 0, 0, 27182.818)
+            assert data.count(pattern) == 1, f'slot {i}: split routing not found exactly once'
+            extra_at['split_route_offset'] = data.index(pattern)
+        if a.eco_eq:                                   # the correction table, found by its identity default + marker
+            import struct
+            pattern = struct.pack('<16f', 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 16180.339)
+            assert data.count(pattern) == 1, f'slot {i}: Eco+ table not found exactly once'
+            extra_at['eco_eq_offset'] = data.index(pattern)
         slots.append(dict(slot=i, fxid=fxid, id=entry['id'], file=p.name, bytes=len(data),
-                          sha256=hashlib.sha256(data).hexdigest(), weights_offset=w_at, name_offset=name_at))
+                          sha256=hashlib.sha256(data).hexdigest(), weights_offset=w_at, name_offset=name_at, **extra_at))
     # Same object linked eight times: the audio code must be the same bytes in
     # every slot (addresses are PC-relative or relocated, so they do not differ).
     assert len(texts) == 1, f'.text differs between slots ({len(texts)} variants)'
     (out / 'multi.json').write_text(json.dumps(dict(
         format=2,
-        engine=f'NAMLite engine {VERSION}' + (f' Eco {a.steps}/8' if eco else ': full rate') + ', exact interleaved rings, register-accumulated taps, fast I/O, Bass/Mid/Treb, Gate',
+        engine=f'NAMLite engine {VERSION}' + (f' Eco{"+" if a.eco_eq else ""} {a.steps}/8' if eco else ': full rate') + (', split' if a.split else '') + ', exact interleaved rings, register-accumulated taps, fast I/O, Bass/Mid/Treb, Gate, soft limiter',
         weights_count=N_WEIGHTS, version_offset=68, output_version=VERSION, sample_rate=44100,
-        dsp_cost=DSP_COST[a.steps], eco=eco,
+        dsp_cost=DSP_COST[a.steps], eco=eco, eco_steps=a.steps, eco_plus=bool(a.eco_eq), split=bool(a.split),
+        model_rate=44100 * a.steps // 8,
         slots=slots), indent=2) + '\n')
     print(f'Packaged {SLOTS} capture templates (900-907, 950-957), engine {VERSION}{" Eco" if eco else ""} -> {out}, 7 knobs; .text identical in all slots.')
 

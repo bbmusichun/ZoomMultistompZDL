@@ -88,3 +88,35 @@ test('pedal names fit the pedal screen: at most 9 characters, NUL-terminated, un
  assert.throws(()=>api.remember(storage,{slot:2,shortName:'smokeco'}),/already shows as NAM-smoke/);
  api.remember(storage,{slot:2,shortName:'smoky'});api.remember(storage,{slot:1,shortName:'smoke45'});
 });
+test('Eco+ slots get the correction filter written, and refuse to export without it',async()=>{
+ const eco=JSON.parse(fs.readFileSync(path.join(base,'nam_template_ecoplus/multi.json')));
+ assert.equal(eco.eco_plus,true);assert.equal(eco.eco_steps,4);
+ const ids=require('../slot_identity.js');
+ for(const slot of [3,17,216]){
+  const meta=ids.slotMeta(eco,slot),tpl=fs.readFileSync(path.join(base,'nam_template_ecoplus',meta.file));
+  assert.ok(Number.isInteger(meta.eco_eq_offset));
+  await assert.rejects(api.convertNamed(model(),tpl,eco,slot,'smokey'),/correction/);
+  const c=Array.from({length:15},(_,i)=>(i+1)/16);
+  const r=await api.convertNamed(model(),tpl,eco,slot,'smokey',null,{ecoEq:c});
+  const v=new DataView(r.bytes.buffer,r.bytes.byteOffset);
+  c.forEach((x,i)=>assert.equal(v.getFloat32(meta.eco_eq_offset+4*i,true),Math.fround(x)));
+  assert.equal(v.getFloat32(meta.eco_eq_offset+60,true),Math.fround(16180.339));   // the marker stays
+ }
+});
+test('split slots get the side factors written, keep the marker, and refuse to export without a side',async()=>{
+ const sp=JSON.parse(fs.readFileSync(path.join(base,'nam_template_split/multi.json')));
+ assert.equal(sp.split,true);assert.equal(sp.eco,false);
+ const ids=require('../slot_identity.js');
+ for(const slot of [3,17,216]){
+  const meta=ids.slotMeta(sp,slot),tpl=fs.readFileSync(path.join(base,'nam_template_split',meta.file));
+  assert.ok(Number.isInteger(meta.split_route_offset));
+  await assert.rejects(api.convertNamed(model(),tpl,sp,slot,'smokey'),/output gets the amp/);
+  await assert.rejects(api.convertNamed(model(),tpl,sp,slot,'smokey',null,{split:3}),/output gets the amp/);
+  for(const [route,l,r] of [[1,1,0],[2,0,1]]){
+   const out=await api.convertNamed(model(),tpl,sp,slot,'smokey',null,{split:route});
+   const v=new DataView(out.bytes.buffer,out.bytes.byteOffset),at=meta.split_route_offset;
+   assert.deepEqual([v.getFloat32(at,true),v.getFloat32(at+4,true)],[l,r]);           // amp share of L, R
+   assert.equal(v.getFloat32(at+12,true),Math.fround(27182.818));                     // the marker stays
+  }
+ }
+});
