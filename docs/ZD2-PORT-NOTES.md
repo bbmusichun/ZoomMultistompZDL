@@ -49,9 +49,9 @@ built or installed by us.
   anything similar to a first knob (TODO.md).
 - **Momentary footswitch:** an effect can expose a trailing LATCH / UNLATCH
   toggle; the firmware does the rest, and the kernel only sees the bypass
-  ramp (hardware-validated on an MS-70CDR+, 2026-07-25). Stock ZDL effects
-  with the same toggle (e.g. EXCITER) suggest a ZDL equivalent may exist;
-  unexplored here. Relevant to Loop and Stasis.
+  ramp (hardware-validated on an MS-70CDR+, 2026-07-25). No ZDL effect in our
+  database has such a toggle (the ZDL Exciter has only Bass / Trebl / Level),
+  so this looks MS Plus only. Relevant to Loop and Stasis if ported.
 - **Routing family** (WfSplit / WfSwap / WfMerge, 2026-07-22): two mono
   chains on one pedal, with separate outputs per group, an A/B footswitch or
   parallel blends. Never with a stock LINE SEL in the same patch. The MS Plus
