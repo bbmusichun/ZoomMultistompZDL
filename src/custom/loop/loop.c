@@ -1,4 +1,4 @@
-/* Loop v0.01: a looper for stock firmware (screen: MS-70CDR 2.10).
+/* Loop v0.02: a looper for stock firmware (screen: MS-70CDR 2.10).
  *
  * The footswitch is the looper's button. Pressing it flips the effect on/off
  * (params[0]); every flip is a press, and the loop plays whether the effect
@@ -20,14 +20,26 @@
  * undo); only on that firmware, not when MIDISTOMP is installed (its looper
  * uses them), and not if they overlap this effect's own arena.
  *
- * Screen (zvis): state, time, the loop's waveform and a playhead. */
+ * Quantize (0.02, knobs 6-8): Tempo (BPM, the knob's number), Beats (beats
+ * per bar; 0 = off) and Click. With Beats set, the first press starts the
+ * recording at once and starts bar 1 there; the closing press snaps the loop
+ * to the nearest whole number of bars: pressed early, the recording runs on
+ * to the bar line, then plays; pressed late, the overshoot is dropped and
+ * playback carries on in time. Tempo and Beats are taken when recording
+ * starts, so the loop and its click stay together. The click (an accent on
+ * each bar) is added to the output only, never recorded: free-running while
+ * the looper is empty, from the first press while recording, locked to the
+ * loop while it plays, silent when stopped.
+ *
+ * Screen (zvis): state, time (with Beats set: the BPM when empty, else bar
+ * and beat), the loop's waveform and a playhead. */
 #include <stdint.h>
 #include "zvis.h"
 #include "loop_art.h"
 
 extern unsigned int _Fx_DLY_Loop_Info[];
 
-#define MAGIC      0x4C4F4F31u                 /* 'LOO1' */
+#define MAGIC      0x4C4F4F32u                 /* 'LOO2' (0.02 layout) */
 #define FXID       467u
 #define REC_BYTES  52u                         /* 4 blocks x (12 bytes of mantissas + 1 shift byte) */
 #define DOUBLE_WIN 2480u                       /* 0.45 s of callbacks: a second press inside = double */
@@ -35,6 +47,12 @@ extern unsigned int _Fx_DLY_Loop_Info[];
 #define OV_MID     23                          /* waveform rows 13..33 */
 #define OV_H       10
 #define NOPOS      0xFFFFu
+#define SR_X60     2646000.0f                  /* 44100 * 60: samples a beat = this / BPM */
+#define CLK_DECAY  0.9975f                     /* click envelope per sample: ~9 ms */
+#define CLK_C      1.9708433f                  /* 2 cos(2 pi 1200 / 44100): the beat click */
+#define CLK_S      0.1701263f                  /* sin(2 pi 1200 / 44100) */
+#define CLK_CA     1.8916480f                  /* 2 cos(2 pi 2000 / 44100): the bar accent */
+#define CLK_SA     0.2811027f                  /* sin(2 pi 2000 / 44100) */
 
 #ifndef LONG_R1                                /* the host test points these at its own buffers */
 #define LONG_R1    0xC0102000u                 /* MS-70CDR 2.10, unused per MIDISTOMP's RAM test */
@@ -51,6 +69,10 @@ typedef struct {
     unsigned pass, lap, dub, pstart, newpass, undo_ok, presses, win, prev, on, kundo, klong;
     unsigned ovcol, step, colk, colk_rec;
     float lvl, dry, fade;
+    /* quantize: q (beats a bar, 0 = off) and the beat in samples, both taken at
+     * record start; target = blocks to record before closing (0 = none). */
+    unsigned q, qk, target, tstop, beat, bib, due;   /* due: close the recording at the next callback's start */
+    float qbeat, qinv, kbpm, gs, ce, cs1, cs2, cc, clk;
     Seg seg[4];
     unsigned char ov[2][ZV_W];                 /* waveform height per screen column, per buffer */
     ZvState z;
@@ -178,15 +200,56 @@ static inline int long_ok(uintptr_t base, uintptr_t end)
     return 1;
 }
 
-ZV_INLINE(close_loop)
-static inline void close_loop(LoopState *st)
+/* Recording ends with `len` blocks; playback goes on at block `at`. */
+ZV_INLINE(finish)
+static inline void finish(LoopState *st, unsigned len, unsigned at)
 {
     unsigned c, cols;
-    if (st->pos < MIN_LEN) { st->mode = READY; st->len = 0; return; }
-    st->len = st->pos; st->pos = 0; st->mode = PLAY;
+    if (st->q) {   /* hand the click on from the recording's grid to the loop's */
+        unsigned tb = (unsigned)(int)((float)(int)len * 8.0f * st->qinv + 0.5f);
+        st->beat = (st->beat != 0xFFFFFFFFu && st->beat >= tb) ? st->beat - tb : 0xFFFFFFFFu;
+    }
+    st->len = len; st->pos = at; st->target = 0;
+    st->mode = st->tstop ? STOP : PLAY;
+    if (st->tstop) st->pos = 0;
+    st->tstop = 0;
     st->colk = colk_of(st->len);
     cols = (st->len * st->colk_rec) >> 16;     /* the recording's waveform, stretched to the screen */
     for (c = ZV_W; c-- > 0u;) st->ov[st->cur][c] = st->ov[st->cur][(c * cols) >> 7];
+}
+
+/* Blocks in n bars (rounded to the 8-sample block). */
+ZV_INLINE(bars_len)
+static inline unsigned bars_len(const LoopState *st, int n)
+{
+    return (unsigned)(int)((float)n * (float)(int)st->q * st->qbeat * 0.125f + 0.5f);
+}
+
+/* The closing press (or a full memory). Free: the loop is what was recorded.
+ * Quantized: the nearest whole number of bars, at least one and within the
+ * memory; shorter than the recording drops the overshoot (playback goes on
+ * past the bar line, in time), longer records on to the bar line. */
+ZV_INLINE(close_loop)
+static inline void close_loop(LoopState *st)
+{
+    unsigned L;
+    int n;
+    if (!st->q) {
+        if (st->pos < MIN_LEN) { st->mode = READY; st->len = 0; st->tstop = 0; return; }
+        finish(st, st->pos, 0);
+        return;
+    }
+    n = (int)((float)(int)st->pos * 8.0f * st->qinv * rcp((float)(int)st->q) + 0.5f);
+    if (n < 1) n = 1;
+    L = bars_len(st, n);
+    while (n > 1 && L > st->cap) L = bars_len(st, --n);
+    if (L > st->cap) {                         /* not even one bar fits: keep what there is */
+        if (st->pos < MIN_LEN) { st->mode = READY; st->len = 0; st->tstop = 0; return; }
+        finish(st, st->pos, 0);
+        return;
+    }
+    if (L > st->pos) { st->target = L; return; }   /* record on to the bar line */
+    finish(st, L, st->pos - L);
 }
 
 ZV_INLINE(single_press)
@@ -197,9 +260,12 @@ static inline void single_press(LoopState *st)
     if (m == READY) {
         unsigned c;
         st->mode = REC; st->pos = 0; st->len = 0; st->cur = 0; st->undo_ok = 0; st->pass = 0; st->dub = 0;
-        st->ovcol = NOPOS;
+        st->ovcol = NOPOS; st->target = 0; st->tstop = 0;
+        st->q = st->qk;                        /* this loop's grid: bar 1 starts now */
+        st->qbeat = SR_X60 * rcp(st->kbpm); st->qinv = st->kbpm * (1.0f / SR_X60);
+        st->gs = 0.0f; st->beat = 0xFFFFFFFFu; st->bib = 0;
         for (c = 0; c < (unsigned)ZV_W; ++c) st->ov[0][c] = 0;
-    } else if (m == REC) close_loop(st);
+    } else if (m == REC) { if (!st->target) st->due = 1; }
     else if (m == PLAY) {
         st->mode = DUB; st->dub = 1;
         if (!st->pass) {
@@ -216,7 +282,8 @@ ZV_INLINE(double_press)
 static inline void double_press(LoopState *st, unsigned prev)
 {
     if (st->mode == READY) return;              /* the first press cancelled a too-short loop */
-    if (prev == READY) { st->mode = READY; st->len = 0; return; }
+    if (prev == READY) { st->mode = READY; st->len = 0; st->target = 0; return; }
+    if (st->target) { st->tstop = 1; return; }  /* recording on to the bar line: stop there */
     if (prev == STOP) { st->mode = READY; st->len = 0; st->pass = 0; st->dub = 0; st->undo_ok = 0; return; }
     if (prev == PLAY && st->newpass) st->pass = 0;   /* drop the overdub the first press began */
     st->dub = 0; st->mode = STOP;
@@ -266,7 +333,7 @@ void Fx_DLY_Loop(uintptr_t *ctx)
     float onv = params[0];                     /* read first: not after zv_service's loops */
     uintptr_t base, end;
     LoopState *st;
-    float in[8], y[8];
+    float in[8], y[8], ck[8];
     unsigned i;
     int visible;
     *magic_dst = *magic_src;
@@ -281,6 +348,9 @@ void Fx_DLY_Loop(uintptr_t *ctx)
         st->undo_ok = 0; st->presses = 0; st->win = 0; st->prev = READY; st->newpass = 0; st->step = 0;
         st->on = onv >= 0.5f; st->kundo = 0xFFu; st->klong = 0xFFu; st->ovcol = NOPOS; st->colk = 0;
         st->lvl = 1.0f; st->dry = 1.0f; st->fade = 1.0f;
+        st->q = 0; st->qk = 0; st->target = 0; st->tstop = 0; st->due = 0; st->beat = 0xFFFFFFFFu; st->bib = 0;
+        st->kbpm = 120.0f; st->qbeat = SR_X60 / 120.0f; st->qinv = 120.0f / SR_X60;
+        st->gs = 0.0f; st->ce = 0.0f; st->cs1 = 0.0f; st->cs2 = 0.0f; st->cc = CLK_C; st->clk = 0.0f;
         st->longok = (unsigned)long_ok(base, end); st->lng = 0;
         for (i = 0; i < (unsigned)ZV_W; ++i) { st->ov[0][i] = 0; st->ov[1][i] = 0; }
         layout(st, end);
@@ -295,11 +365,30 @@ void Fx_DLY_Loop(uintptr_t *ctx)
         st->lvl = zoom_param_norm01(params[5], 1.0f);
         st->dry = zoom_param_norm01(params[6], 1.0f);
         st->fade = zoom_param_norm01(params[7], 1.0f);
+        {   /* knobs 6-8 arrive as raw/100: Tempo is the BPM, Beats 0 = off */
+            float t = params[10] * 100.0f, b = params[11] * 100.0f;
+            if (!(t >= 40.0f)) t = !(t >= 0.0f && t <= 300.0f) ? 120.0f : 40.0f;
+            if (t > 250.0f) t = 250.0f;
+            st->kbpm = (float)(int)(t + 0.5f);
+            st->qk = (b >= 0.5f && b <= 12.5f) ? (unsigned)(int)(b + 0.5f) : 0u;
+            st->clk = zoom_param_norm01(params[12], 0.5f);
+        }
         if (st->win) { if (--st->win == 0u) st->presses = 0; }
         if ((unsigned)on != st->on) {
             st->on = (unsigned)on;
             if (st->presses == 1u && st->win) { double_press(st, st->prev); st->presses = 0; st->win = 0; }
             else { st->prev = st->mode; single_press(st); st->presses = 1; st->win = DOUBLE_WIN; }
+        }
+        /* The one place a recording closes (press, bar line, full memory): one
+         * inlined copy of close_loop / finish. The block that asked was the
+         * last recorded; the loop plays from this block on, so no timing is lost. */
+        if (st->due) {
+            st->due = 0;
+            if (st->mode == REC) {
+                if (st->target && st->pos >= st->target) finish(st, st->target, 0);
+                else if (!st->target) close_loop(st);
+                else if (st->pos >= st->cap) { st->target = 0; close_loop(st); }
+            }
         }
         if (ku != st->kundo) { if (st->kundo != 0xFFu) undo(st); st->kundo = ku; }
         if (kl != st->klong) {
@@ -310,10 +399,53 @@ void Fx_DLY_Loop(uintptr_t *ctx)
     }
 
     for (i = 0; i < 8u; ++i) { in[i] = (fx[i] + fx[i + 8]) * 0.5f; y[i] = 0.0f; }
-    if (st->mode == REC) {
+    {   /* the click, on the loop's grid (from the block's state before it plays);
+         * READY: free-running at the knobs' tempo. Added to the output, not recorded. */
+        unsigned beats = st->mode == READY ? st->qk : st->q, tb = 0xFFFFFFFFu;
+        int on = beats && st->clk > 0.0f && st->mode != STOP;
+        float inv = st->mode == READY ? st->kbpm * (1.0f / SR_X60) : st->qinv, g0, bar = 0.0f, rb = 0.0f;
+        if (on) {
+            rb = rcp((float)(int)beats);
+            bar = (float)(int)beats * SR_X60 * rcp(st->kbpm);
+            if (st->mode == READY) g0 = st->gs;
+            else {
+                g0 = (float)(int)st->pos * 8.0f;  /* this block: since the first press, or of the loop */
+                if (st->mode != REC) tb = (unsigned)(int)((float)(int)st->len * 8.0f * inv + 0.5f);   /* beats in the loop */
+            }
+        } else g0 = 0.0f;
+        for (i = 0; i < 8u; ++i) {
+            float c = 0.0f;
+            if (on) {
+                float g = g0 + (float)(int)i;
+                unsigned bt;
+                if (st->mode == READY && g >= bar) g -= bar;
+                bt = (unsigned)(int)(g * inv);
+                if (bt >= tb) bt = tb - 1u;     /* rounding sliver before the loop wraps */
+                if (bt != st->beat) {          /* a new beat: restart the click, accent on the bar */
+                    unsigned k = (unsigned)(int)((float)(int)bt * rb + 1.0e-4f);
+                    st->beat = bt;
+                    st->bib = bt - k * beats;
+                    st->cc = st->bib ? CLK_C : CLK_CA;
+                    st->cs1 = 0.0f; st->cs2 = st->bib ? -CLK_S : -CLK_SA; st->ce = 1.0f;
+                }
+            } else st->beat = 0xFFFFFFFFu;
+            if (st->ce > 0.0f) {
+                float v = st->cc * st->cs1 - st->cs2;
+                st->cs2 = st->cs1; st->cs1 = v;
+                c = v * st->ce * st->clk * 0.5f;
+                st->ce *= CLK_DECAY;
+                if (st->ce < 1.0e-4f) { st->ce = 0.0f; st->cs1 = 0.0f; st->cs2 = 0.0f; }
+            }
+            ck[i] = c;
+        }
+        if (st->mode == READY && on) { st->gs += 8.0f; if (st->gs >= bar) st->gs -= bar; }
+    }
+
+    if (st->mode == REC && !st->due) {
         enc_block(rec_at(st, st->cur, st->pos), st->pos & 3u, in);
         ov_put(st, st->cur, (st->pos * st->colk_rec) >> 16, in);
-        if (++st->pos >= st->cap) close_loop(st);
+        ++st->pos;
+        if ((st->target && st->pos >= st->target) || st->pos >= st->cap) st->due = 1;   /* closes next callback */
     } else if (st->len && st->mode != READY && (st->mode != STOP || st->pass)) {
         unsigned dst = st->cur ^ 1u;
         dec_block(rec_at(st, st->pass && st->lap ? dst : st->cur, st->pos), st->pos & 3u, y);
@@ -331,7 +463,7 @@ void Fx_DLY_Loop(uintptr_t *ctx)
         if (st->mode == STOP) for (i = 0; i < 8u; ++i) y[i] = 0.0f;
     }
     for (i = 0; i < 8u; ++i) {
-        float p = y[i] * st->lvl;
+        float p = y[i] * st->lvl + ck[i];
         fx[i] = fx[i] * st->dry + p;
         fx[i + 8] = fx[i + 8] * st->dry + p;
     }
@@ -350,12 +482,34 @@ void Fx_DLY_Loop(uintptr_t *ctx)
         unsigned t = st->mode == READY ? st->cap : st->mode == REC ? st->pos : st->len;
         unsigned t10 = (unsigned)(int)((float)(int)t * 0.0018140590f), d2 = t10 / 100u, d1 = (t10 / 10u) % 10u, d0 = t10 % 10u;
         int x = ZV_W - 1 - LOOP_GW * (d2 ? 5 : 4);
+        unsigned qb = st->mode == READY ? st->qk : st->q;
         put2(&st->z, LOOP_WORDS + LOOP_WORD_AT[st->mode], (int)LOOP_WORD_W[st->mode], 1);
-        if (d2) { put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d2, LOOP_GW, x); x += LOOP_GW; }
-        put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d1, LOOP_GW, x); x += LOOP_GW;
-        put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * 10u, LOOP_GW, x); x += LOOP_GW;   /* . */
-        put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d0, LOOP_GW, x); x += LOOP_GW;
-        put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * 11u, LOOP_GW, x);                  /* S */
+        if (qb && st->mode == READY) {         /* quantize, empty: the tempo */
+            unsigned b = (unsigned)(int)st->kbpm;
+            d2 = b / 100u; d1 = (b / 10u) % 10u; d0 = b % 10u;
+            x = ZV_W - 1 - LOOP_GW * (d2 ? 3 : 2);
+            if (d2) { put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d2, LOOP_GW, x); x += LOOP_GW; }
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d1, LOOP_GW, x); x += LOOP_GW;
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d0, LOOP_GW, x);
+        } else if (qb) {                       /* quantize: bar.beat, from 1 */
+            unsigned bt = (unsigned)(int)((float)(int)st->pos * 8.0f * st->qinv);
+            unsigned k = (unsigned)(int)((float)(int)bt * rcp((float)(int)qb) + 1.0e-4f);
+            unsigned bar = k + 1u, beat = bt - k * qb + 1u;
+            if (bar > 99u) bar = 99u;
+            d1 = bar / 10u; d0 = bar % 10u;
+            x = ZV_W - 1 - LOOP_GW * ((d1 ? 2 : 1) + 2 + (beat > 9u ? 1 : 0));
+            if (d1) { put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d1, LOOP_GW, x); x += LOOP_GW; }
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d0, LOOP_GW, x); x += LOOP_GW;
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * 10u, LOOP_GW, x); x += LOOP_GW;   /* . */
+            if (beat > 9u) { put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * 1u, LOOP_GW, x); x += LOOP_GW; beat -= 10u; }
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * beat, LOOP_GW, x);
+        } else {
+            if (d2) { put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d2, LOOP_GW, x); x += LOOP_GW; }
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d1, LOOP_GW, x); x += LOOP_GW;
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * 10u, LOOP_GW, x); x += LOOP_GW;   /* . */
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * d0, LOOP_GW, x); x += LOOP_GW;
+            put2(&st->z, LOOP_GLYPHS + 2u * LOOP_GW * 11u, LOOP_GW, x);                  /* S */
+        }
         if (st->undo_ok) put2(&st->z, LOOP_TAGS + LOOP_TAG_AT[0], (int)LOOP_TAG_W[0], LOOP_TAG_X);
         if (st->longm) put2(&st->z, LOOP_TAGS + LOOP_TAG_AT[1], (int)LOOP_TAG_W[1], LOOP_TAG_X);
         else if (st->klong == 1u) put2(&st->z, LOOP_TAGS + LOOP_TAG_AT[2], (int)LOOP_TAG_W[2], LOOP_TAG_X);
@@ -376,4 +530,28 @@ void Fx_DLY_Loop(uintptr_t *ctx)
         zv_submit(&st->z);
         st->step = 0;
     }
+}
+
+/* Knob labels (pedal and PE): Tempo shows the BPM it plays (40..250), Beats
+ * shows Off at 0. No divide helper: constant divisions only. */
+ZV_INLINE(label_num)
+static inline int label_num(unsigned v, char *out)
+{
+    int n = 0;
+    if (v >= 100u) out[n++] = (char)('0' + v / 100u);
+    if (v >= 10u) out[n++] = (char)('0' + (v / 10u) % 10u);
+    out[n++] = (char)('0' + v % 10u);
+    out[n] = 0;
+    return n;
+}
+
+int ZDL_GetLabel_5(unsigned int value, char *out)
+{
+    return label_num(value < 40u ? 40u : value > 250u ? 250u : value, out);
+}
+
+int ZDL_GetLabel_6(unsigned int value, char *out)
+{
+    if (!value) { out[0] = 'O'; out[1] = 'f'; out[2] = 'f'; out[3] = 0; return 3; }
+    return label_num(value, out);
 }

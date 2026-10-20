@@ -11,6 +11,8 @@ This was a good amount of work and tokens, please consider to [Sponsor this proj
 
 <p align="center"><a href="https://youtu.be/gNDif0cOdFk"><img src="graphics/tutorial-video.jpg" width="720" alt="Watch the video tutorial on YouTube: a NAM capture running on a Zoom MS-70CDR"></a></p>
 
+**In the press:** [Vibe coding is turning the music gear world upside down](https://www.theverge.com/gadgets/1013493/vibe-coding-ai-music-gear-hacking-custom-firmware) (The Verge, Terrence O'Brien, October 19, 2026) features this project and the MS-70CDR work.
+
 <p align="center"><img src="graphics/thumb_effects.png" width="900" alt="Every effect's pedal screen: the 22-effect pack, the experimental looper and live screens, a NAM and a CAB example, and the included Matujuice pack"></p>
 
 **New here?** This is a pack of 22 extra effects plus a free browser-based
@@ -43,6 +45,9 @@ Zoom Effect Manager installs the effects. See the [installation guide](docs/INST
   Zoom's newer ZD2 effect format, so ZDL files don't load on them. See
   [Compatibility](#compatibility) below and the
   [pedal research notes](docs/pedal-research/README.md).
+* **NAM on a Plus pedal:** use [nam2zoom](https://github.com/freelender/nam-to-zoom) by Aleksandar Vukasinovic instead
+  (not this project). It packs 1-10 NAM captures into one MS Plus effect;
+  tested on the MS-50G+ and MS-70CDR+, experimental on the MS-60B+.
 
 ## Custom NAM captures and cabinets (experimental)
 
@@ -59,7 +64,7 @@ compiler, nothing uploaded anywhere.
 
 **How to use it**
 
-1. Open the [NAM + Cab Loader](tools/nam_loader.html) (Patch Editor
+1. Open the [NAM + Cab Loader](https://themanro.github.io/ZoomMultistompZDL/tools/nam_loader.html) (Patch Editor
    **Settings → Custom NAM captures**, with the local editor running).
 2. **Amp:** drop in an A2 Lite `.nam` file, give it a short name, pick an
    icon and a slot, download the `.ZDL` and its thumbnail. Pick **Eco** or
@@ -331,7 +336,7 @@ their knobs are on the pedal's knob pages, as usual.
 
 | Effect | What it does |
 |---|---|
-| **[Loop](src/custom/loop/README.md)** | A looper on the footswitch: record, play, overdub, stop, clear, with undo/redo. About 5 s, or about 23 s in experimental Long mode. Its screen shows the state, the time and the loop's waveform. |
+| **[Loop](src/custom/loop/README.md)** | A looper on the footswitch: record, play, overdub, stop, clear, with undo/redo. About 5 s, or about 23 s in experimental Long mode. Tempo quantize (set the BPM and beats per bar; the loop snaps to whole bars) with a click. Its screen shows the state, the time or bar and beat, and the loop's waveform. |
 | **Scope** | A live oscilloscope of your signal, full screen: waveform, or XY (left against right). |
 | **Spectrum** | A live spectrum analyzer, 40 Hz – 16 kHz, with peak hold, full screen. |
 | **Ring** | A rotating ring that follows the signal, full screen. |
@@ -436,6 +441,8 @@ Sources for the shared DSP family:
 in `dist/` loads on them. Custom ZD2 effects are now demonstrated on the
 MS-70CDR+ by [Stomphacks](https://github.com/thammer/stomphacks), including a
 C-to-ZD2 build pipeline. Our pack and Patch Editor have not been ported.
+For NAM captures on a "+" pedal, [nam2zoom](https://github.com/freelender/nam-to-zoom) works today (MS-50G+ and MS-70CDR+
+tested, MS-60B+ experimental).
 See [ZD2 research notes](docs/ZD2-PORT-NOTES.md) for the evidence, remaining
 memory/interface questions, and proposed next steps.
 
@@ -681,6 +688,7 @@ them beside the repo, treat them as read-only references.
 | [MIDISTOMP](https://github.com/matujuice/zoom-ms-midistomp) | Custom firmware for the original MultiStomps: MIDI Program Change, CC control of every knob, MIDI clock with Start/Stop, a tap-tempo screen and footswitch-hold options. Installed by flashing a modified Zoom updater (riskier than an Effect Manager install). Tested on an MS-60B running MS-50G 3.10; MS-50G and MS-70CDR untested. MIT. |
 | [Matujuice ZDL effects pack](https://github.com/matujuice/zoom-ms-zdl-effects-pack) | Luca Matturro's custom effects, built on this toolchain, made for synths and drum machines. v1.5 is [included here](#matujuice-effects-pack-included); v1.6 and later follow MIDISTOMP's tempo (120 BPM on stock firmware). MIT. |
 | [repeat98/ZoomMultistompZDL](https://github.com/repeat98/ZoomMultistompZDL) | The upstream ZDL toolchain this fork started from. |
+| [nam2zoom](https://github.com/freelender/nam-to-zoom) | NAM captures on the **Plus** pedals (MS-50G+, MS-70CDR+; MS-60B+ experimental): one to ten captures in one "N2Z Bank" effect (Model, Bass, Mid, Treble, Vol, Input, Mix), on a smaller 14-layer network, with an optional cab IR. Windows app; macOS in preview. By Aleksandar Vukasinovic, MIT. |
 | [Leemuzhko/ZOOM_development](https://github.com/Leemuzhko/ZOOM_development) | Alexander Lim's SDK notes and hardware results for the MS-70CDR. Much here rests on them: how an effect draws its own screen (the live screens and the zvis kit), the pedal's file-size cap and DSP limit, and linker pitfalls. The repo has no licence, so its findings are used here with credit, not its code. |
 | [Leemuzhko/HYBRID-IR](https://github.com/Leemuzhko/HYBRID-IR) | Alexander Lim's short-filter-plus-EQ cab idea behind CabIR. |
 | [Ziddle](https://berbasoft.com/ziddle/) | C674x emulator used to test ZDLs before they touch hardware. |

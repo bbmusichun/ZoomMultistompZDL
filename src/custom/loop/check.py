@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Host check for loop.c: a scripted session (record, play, overdub, undo,
-redo, stop, clear), every output sample compared with the loop it should hold.
+redo, stop, clear), every output sample compared with the loop it should hold;
+then quantize (snapping to bars, early and late closes) and the click's timing.
     python3 src/custom/loop/check.py [--long]
 --long points the Long regions at host buffers to check the segment layout."""
 import argparse, ctypes as C, subprocess, sys, tempfile
@@ -83,10 +84,71 @@ def long_take(lib, long_mode, seconds):
     return err < 1e-3
 
 
+def quantize(lib):
+    """Tempo / Beats / Click (0.02). Knobs: Loop Dry Fade Undo Long Tempo Beats Click."""
+    rng = np.random.default_rng(5)
+    ok = True
+
+    def take(bpm, beats, p2_blocks, label):
+        nonlocal ok
+        bar = round(beats * SR * 60 / bpm / 8, 6)            # blocks a bar (may be fractional)
+        P1 = blk(0.5)
+        n0 = max(1, round(p2_blocks / bar))
+        nb = P1 + max(int(n0 * bar + 0.5), p2_blocks) + 2 * int(n0 * bar + 0.5) + 1000
+        x = (0.25 * rng.standard_normal(nb * BLK)).astype(np.float32)
+        x[:P1 * BLK] = 0
+        y = run(lib, x, [(P1, "press"), (P1 + p2_blocks, "press")], [100, 0, 100, 0, 0, bpm, beats, 0])
+        xb, yb = x.reshape(-1, BLK), y.reshape(-1, BLK)
+        n = max(1, round(p2_blocks / bar))
+        L = int(n * bar + 0.5)
+        start = P1 + max(L, p2_blocks)                    # playback from here (early: at the bar line)
+        rec = xb[P1:P1 + L]
+        exp = np.zeros_like(yb)
+        for k in range(start, nb):
+            exp[k] = rec[(k - P1) % L]                    # in time with the first press
+        err = np.abs(yb - exp).max()
+        good = err < 1e-3
+        ok &= good
+        print(f"  {label:34s} {n} x {beats} beats at {bpm} BPM = {L} blocks; worst {err:.2e} {'ok' if good else 'FAIL'}")
+
+    print("quantize:")
+    take(120, 4, 11025 + 2000, "late close (overshoot dropped)")
+    take(120, 4, 2 * 11025 - 3000, "early close (records to the bar)")
+    take(100, 1, int(7.4 * 3307.5), "Beats 1: snap to beats")
+    take(97, 3, int(1.2 * 3 * SR * 60 / 97 / 8), "3/4 at 97 BPM")
+
+    # the click: silence in, Dry 0; free-running before the first press, from the
+    # press while recording, on the loop's grid after a late close
+    bpm, beats = 120, 4
+    beat = SR * 60 / bpm                                   # 22050 samples
+    P1, P2 = blk(1.3), blk(1.3) + 11025 + 3000
+    nb = P2 + 3 * 11025
+    x = np.zeros(nb * BLK, np.float32)
+    y = run(lib, x, [(P1, "press"), (P2, "press")], [100, 0, 100, 0, 0, bpm, beats, 100])
+    hit = np.abs(y) > 0.02                                 # a click's first sample is 0.085 (accent 0.14)
+    on = np.flatnonzero(hit & ~np.concatenate([[False], hit[:-1]]))
+    on = on[np.concatenate([[True], np.diff(on) > 2000])]   # one onset per click
+    first = y[on]
+    accent = np.abs(first - 0.5 * 0.2811027) < 1e-3
+    pre, post = on[on < P1 * BLK], on[on >= P1 * BLK]
+    gaps_pre = np.diff(pre)
+    gaps = np.diff(post)
+    good = (len(post) > 8 and post[0] - P1 * BLK < 8 and accent[on >= P1 * BLK][0]
+            and np.all(np.abs(gaps - beat) <= 8) and np.all(np.abs(gaps_pre - beat) <= 8))
+    acc_post = accent[on >= P1 * BLK]
+    pattern = "".join("A" if a else "b" for a in acc_post[:12])
+    good &= pattern.startswith("AbbbAbbbAbbb"[:len(pattern)])
+    ok &= good
+    print(f"  click: {len(pre)} before the press, {len(post)} after; gaps {gaps.min() if len(gaps) else 0}-{gaps.max() if len(gaps) else 0} samples (beat {beat:.0f}); accents {pattern} {'ok' if good else 'FAIL'}")
+    return ok
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--long", action="store_true"); a = ap.parse_args()
     lib = load(a.long)
     if not long_take(lib, a.long, 12.0 if a.long else 8.0):
+        print("FAIL"); sys.exit(1)
+    if not a.long and not quantize(lib):
         print("FAIL"); sys.exit(1)
     n = blk(22.0) * BLK
     t = np.arange(n) / SR

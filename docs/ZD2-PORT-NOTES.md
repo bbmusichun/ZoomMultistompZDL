@@ -58,6 +58,40 @@ built or installed by us.
   counterpart of our NAM / CabIR split outputs.
 - One-click installs of shared effects: https://sym.bios.is.
 
+## NAM on the Plus pedals: nam2zoom (October 20, 2026)
+
+People ask whether our NAM Loader works on the "+" models. It doesn't (ZDL
+only), but [nam2zoom](https://github.com/freelender/nam-to-zoom)
+(freelender, Aleksandar Vukasinovic, MIT; v1.2.3, 2026-10-14) does NAM there.
+From its README and user guide, not tested by us:
+
+- **Pedals:** MS-50G+ firmware 1.40 and MS-70CDR+ firmware 1.20 tested by
+  users; MS-60B+ firmware 1.20 experimental (same protocol, no N2Z test yet).
+  Other models and firmware are refused.
+- **What it makes:** one effect, "N2Z Bank", holding 1-10 captures; knobs
+  Model, Bass, Mid, Treble, Vol, Input, Mix; only the selected model runs. An
+  optional mono cab IR per model. The whole effect is replaced on each
+  install; models are not loaded at run time.
+- **Network:** "Compact", 14 layers, 3 channels, 44.1 kHz, a two-sample
+  kernel, 659 weights per model (A2 Lite, our engine, has 1,871 and is
+  disabled there pending tests). Other captures are re-trained on the PC
+  into Compact (CPU or CUDA; several GB of packages).
+- **DSP:** declares a load of 150, like ours an admission value, not
+  measured. One saved six-effect chain passed; swapping in FD B-MAN gave
+  PROCESS OVERFLOW after a reboot.
+- **IDs:** new banks use `0x04001787` (PREAMP), older ones `0x07000F87`. In
+  Stomphacks' ID scheme low16 0x1787 is in the reserved range
+  (0x1400-0x1fff), and 0x0F87 in the old DIY page; worth knowing if both
+  projects' effects share a pedal.
+- **Tooling:** Windows x64 portable app (.NET / Avalonia), macOS Apple
+  Silicon in preview; guarded installer (autosave off, stock patch selected,
+  saved patches checked, readback). Built on Thomas Hammer's zoom-explorer
+  and Stomphacks research.
+
+For us: point "+" owners there for NAM. A port of our A2 Lite engine to ZD2
+would only add value if the Plus DSP has room for 1,871-weight models at a
+usable cost.
+
 ## Interface findings relevant to our pack
 
 The [upstream ABI documentation](https://github.com/thammer/stomphacks/blob/main/docs/zd2-abi.md)

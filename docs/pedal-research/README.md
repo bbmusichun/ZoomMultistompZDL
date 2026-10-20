@@ -20,7 +20,7 @@ older G3/G5/B3 need firmware patching nobody has done.
 | MS-100BT | ZDL | Bluetooth only (third-party tools) | **4 confirmed** by a user | no (no USB MIDI) | untested | Ask [#4](https://github.com/themanro/ZoomMultistompZDL/issues/4) to try NAM + CabIR |
 | MS-60B | ZDL | Effect Manager | untested on stock firmware; runs custom effects on MS-50G firmware | no: 105-byte, 4-slot patches | untested; flash space tight | Map the 105-byte layout; find an owner |
 | G1on / G1Xon / B1on / B1Xon | ZDL | Effect Manager | one failure report upstream | no: different IDs, 5 slots | unknown DSP budget | First hardware report |
-| MS-50G+ / MS-60B+ / MS-70CDR+ (and MS-200D+, MS-80IR+, MS-90LP+) | ZD2 | Handy Guitar Lab (iOS), community tools | not loadable (ZDL) | no: different protocol | needs a ZD2 port | Build a pass-through ZD2 with the Stomphacks pipeline |
+| MS-50G+ / MS-60B+ / MS-70CDR+ (and MS-200D+, MS-80IR+, MS-90LP+) | ZD2 | Handy Guitar Lab (iOS), community tools | not loadable (ZDL) | no: different protocol | needs a ZD2 port; NAM already runs there via [nam2zoom](https://github.com/freelender/nam-to-zoom) (50G+, 70CDR+; 60B+ experimental) | Build a pass-through ZD2 with the Stomphacks pipeline |
 | G1 / G1X / B1 / B1X / A1 / A1X Four | ZD2 | Guitar Lab, Zoom Effect Manager 2.2+ | not loadable | no | needs a ZD2 port; less RAM | Read-only research only |
 | G3n / G3Xn / G5n / B3n | ZD2 | Guitar Lab, Zoom Effect Manager 2.3+ | not loadable | no | needs a ZD2 port | Read-only research only |
 | AC-2 / AC-3 | ZD2 | firmware updater only | not loadable | no (no screen) | unlikely | Out of scope for now |

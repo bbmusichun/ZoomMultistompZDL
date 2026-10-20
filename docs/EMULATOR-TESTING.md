@@ -46,6 +46,20 @@ it pulls in Cranelift.
 > register file. Without the fix, a masked `STW.D2T1` to the stack under
 > `SPMASK ... D2` is replayed on every SPLOOP iteration and corrupts a spilled
 > value (see NAM-RUNTIME-INVESTIGATION.md, 2026-10-19).
+>
+> **Two more (2026-10-20), same file set:**
+> - `insn/mod.rs`, `decode_compact16`, rule `(h & 0x040e) == 0x040a` (16-bit
+>   SHL/SHR by a constant): the 3-bit field means 1-6 as is, **7 = 8, 0 = 16**
+>   (checked against TI's dis6x on every such instruction in `dist/`). Raw,
+>   `SHL 8` ran as `SHL 7`, which corrupted Loop's packed samples.
+> - `state.rs`, `sploop_tick`, the SPLOOPW branch: when the exit condition is
+>   false at a stage boundary, end the loop there (`exit_t = t`) instead of
+>   starting one more iteration. TI-built 128-iteration loops ran 129-130
+>   times and stored past their arrays (once into code).
+> After both, Loop matches the host to ~1e-7 and NAM full rate is unchanged
+> (2e-10). The NAM split build still differs from the host in the emulator
+> (amp side near silent) while playing correctly on the pedal: a gap not yet
+> found.
 
 ## 2. `matcheck` — does `_init` materialize params?
 

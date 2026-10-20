@@ -89,7 +89,12 @@ def build(here: Path, cover_rle: bytes) -> Path:
             assert sec['size'] == 0, f"unexpected {sec['name']} ({sec['size']} bytes)"
     audio_idx = next(s['idx'] for s in o.sections if s['name'] == '.audio')
     funcs = {s['name']: s['shndx'] for s in o.symbols if s['type'] == 2 and s['shndx']}
-    stray = [n for n, i in funcs.items() if i != audio_idx and not n.startswith('ZDL_GetLabel_')]
+    # Knob-label callbacks (ZDL_GetLabel_*) are called by the pedal's UI, not by
+    # the audio code, so they may sit in .text; branch labels the compiler emits
+    # inside them ($C$L...) are local jumps there, not functions.
+    label_secs = {i for n, i in funcs.items() if n.startswith('ZDL_GetLabel_')}
+    stray = [n for n, i in funcs.items() if i != audio_idx and not n.startswith('ZDL_GetLabel_')
+             and not (n.startswith('$C$') and i in label_secs)]
     assert not stray, f"functions outside .audio (a cross-section call froze the pedal): {stray}"
     out = (Path(emu) if emu else ROOT / "dist") / f"{name}.ZDL"
     link(LinkerConfig(effect_name=name, audio_func_name=audio, gid=m["gid"], fxid=m["fxid"],

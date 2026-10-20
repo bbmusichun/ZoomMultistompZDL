@@ -14,7 +14,8 @@
   needing a repair.
 - **The "+" models (MS-50G+, MS-60B+, MS-70CDR+) and the Four series are not
   supported.** If Effect Manager looks different from the guides, check your
-  model first.
+  model first. For NAM on a "+" pedal, use [nam2zoom](https://github.com/freelender/nam-to-zoom)
+  (MS-50G+ and MS-70CDR+ tested, MS-60B+ experimental).
 - Back up your patches.
 
 ## If the pedal freezes

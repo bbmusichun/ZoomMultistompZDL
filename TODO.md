@@ -13,12 +13,42 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
   the cab loader, the PE knob label, a loader test, emulator vs host check,
   then a test file per side for the pedal. Use with NAM full rate, not NAM
   split (no output would carry the amp).
-- **Pedal tests pending:** Skull 0.05 and full-screen Scope 0.03 / Spectrum
-  0.02 / Ring 0.02 (no knob boxes, also after switching patches); NAM split
-  rebuilt with `restrict` back (amp alive on both sides).
+- **Pedal tests pending:** Loop 0.02 (tempo quantize, click); Skull 0.05
+  and full-screen Scope 0.03 / Spectrum 0.02 / Ring 0.02 (no knob boxes,
+  also after switching patches); NAM split rebuilt with `restrict` back (amp
+  alive on both sides).
+- **MIDISTOMP collaboration** (Luca Matturro, 2026-10-20). He offered:
+  - an early MIDISTOMP v2.0 build (two buses with routing, parallel
+    processing, the 70CDR as two mono pedals; a new effect-chain screen; a
+    performance mode), including a build with the DSP limit at 300 (he ran
+    chains up to ~293): measure it with the cost probes, then update PE's
+    meter and the README;
+  - making our effects follow MIDI clock (tempo from MIDISTOMP, as his
+    v1.6+ effects do): Loop's Tempo, Hydra, Spiral first; a clock-locked
+    Loop could also start and stop with it;
+  - Spectrum and Scope as permanent MIDISTOMP menu items;
+  - submitting the projects to the Modwerk app.
+  Needs from us: what MIDISTOMP exposes to effects (tempo, transport), and
+  an agreed way for an effect to tell whether MIDISTOMP is there (Loop's Long
+  mode already reads its services block).
 
 ## Later
 
+- **Install from the browser (REA research).** Work out how Zoom Effect
+  Manager sends a ZDL to the pedal, so the Patch Editor and the NAM/cab
+  loaders can install effects over Web MIDI without Effect Manager (and the
+  Modwerk proposal gets an install path). Tool: [REA](https://github.com/morluto/rea)
+  (MIT, from Janik), set up 2026-10-20 as the `rea` MCP server in Claude Code
+  (runs under Node 24 via npx; REA does not support Node 25). Needs a native
+  provider first: Hopper, Ghidra or IDA (none installed). Rules:
+  interoperability only, never ship Zoom code; start read-only (list
+  installed effects), and write nothing to the pedal until the protocol is
+  understood and checked against a backup. REA does not cover TI C6000, so
+  effect and firmware code stay with dis6x, our disassembler and Ziddle.
+
+- **Emulator: NAM split** still differs from the host (amp side near
+  silent) while playing correctly on the pedal: one more Ziddle gap, not yet
+  found, after the three fixed ones (docs/EMULATOR-TESTING.md).
 - **MIDISTOMP and a DSP limit of 300** (reported for an upcoming version):
   once released, measure the real limit on the MS-70CDR with the cost probes
   and update PE's meter (`DSP_BUDGET`, 228 now) and the README budget table.

@@ -362,6 +362,21 @@
   /* A reserved bottom strip keeps notices away from the editing surface. */
   body{padding-bottom:88px!important}
   dialog.drawer,#patchPasteDialog,#reloadBankDialog{padding-bottom:88px}
+  /* Support dialog: the editor's own panel look (border, offset shadow). */
+  #supportDialog{max-width:min(560px,92vw);box-sizing:border-box;background:var(--panel);color:var(--ink);
+    border:var(--b) solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:26px 28px 24px}
+  #supportDialog h2{display:flex;align-items:center;gap:12px;margin:0 0 16px;font-size:20px;font-weight:400;letter-spacing:1px;text-transform:uppercase}
+  #supportDialog h2 svg{flex:none;width:26px;height:26px}
+  #supportDialog p{margin:0 0 14px;line-height:1.6;text-transform:none;letter-spacing:0;max-width:62ch}
+  #supportDialog .support-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;margin-top:22px}
+  #supportDialog .support-actions a{display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+    background:var(--lcd);color:var(--ink);border:var(--b) solid var(--ink);box-shadow:3px 3px 0 var(--ink);
+    padding:7px 12px;font-size:13px;text-transform:uppercase;letter-spacing:1px}
+  #supportDialog .support-actions a.primary{background:var(--ink);color:var(--paper)}
+  #supportDialog .support-actions a:hover{background:var(--lcd-deep)} #supportDialog .support-actions a.primary:hover{background:var(--primary-hi)}
+  #supportDialog .support-actions a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+  #supportDialog .support-actions button{min-height:36px}
+  #openSupport{display:inline-flex;align-items:center;gap:6px}
   #noticeBar{position:fixed;inset:auto 0 0 0;z-index:10000;box-sizing:border-box;
     height:72px;display:flex;align-items:center;gap:14px;padding:12px 18px;
     background:var(--panel);color:var(--ink);border-top:var(--b) solid var(--ink);
@@ -543,10 +558,23 @@
     <button value="yes">Yes</button>
   </form>
 </dialog>
+<dialog id="supportDialog" aria-labelledby="supportTitle">
+  <form method="dialog">
+    <h2 id="supportTitle"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Support ZoomMultistompZDL</h2>
+    <p>This editor, the custom effects and the NAM and cab loaders are free and open source. They came out of a lot of reverse engineering, testing on real pedals, and the people who report what works on theirs.</p>
+    <p>If they've earned a spot on your board and you'd like to chip in, you can sponsor the project on GitHub or buy me a coffee. It's entirely optional and everything stays free either way. Bug reports, test results and sharing what you make help just as much.</p>
+    <div class="support-actions">
+      <button value="close" autofocus>Close</button>
+      <a href="https://buymeacoffee.com/sz0kfixkct" target="_blank" rel="noopener noreferrer">Buy me a coffee <span aria-hidden="true">↗</span></a>
+      <a class="primary" href="https://github.com/sponsors/themanro" target="_blank" rel="noopener noreferrer">Sponsor on GitHub <span aria-hidden="true">↗</span></a>
+    </div>
+  </form>
+</dialog>
 <footer id="noticeBar" aria-label="Editor notifications">
   <span class="hint">Latest update</span>
   <span id="noticeText" role="status" aria-live="polite" aria-atomic="true">Ready.</span>
   <button id="enableWrites" hidden title="Test this pedal with a harmless write, then allow edits">Enable writes (experimental)</button>
+  <button id="openSupport" type="button" aria-haspopup="dialog" aria-controls="supportDialog" title="Support the ZoomMultistompZDL project"><span aria-hidden="true">♡</span> Support</button>
   <button id="clearNotice" aria-label="Clear notification" title="Clear notification">✕</button>
 </footer>
 <script src="cover_art.js"></script>
@@ -831,6 +859,7 @@ const noticeObserver=new MutationObserver(()=>{
   if($("noticeBar").parentElement!==owner)owner.appendChild($("noticeBar"));
 });
 for(const dialog of document.querySelectorAll("dialog"))noticeObserver.observe(dialog,{attributes:true,attributeFilter:["open"]});
+$("openSupport").addEventListener("click",()=>$("supportDialog").showModal());
 function hex(a){return Array.from(a,x=>x.toString(16).padStart(2,"0")).join(" ");}
 
 let TRACE=false, lastEnable=0, editModeActive=false, syncing=false, rxCount=0;

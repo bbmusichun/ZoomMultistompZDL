@@ -3,7 +3,8 @@
 `Loop.ZDL` (FXID 467, Delay group) records a loop, plays it, and lets you
 overdub, undo and redo, all from the footswitch. It runs on the stock
 firmware, with no MIDISTOMP needed. Its screen (state, time and waveform) needs
-MS-70CDR 2.10. Tested on the pedal on 2026-10-19.
+MS-70CDR 2.10. Tested on the pedal on 2026-10-19 (v0.01). v0.02 adds
+tempo quantize and a click; not yet tested on the pedal.
 
 Put Loop last in the patch, so it records everything before it.
 
@@ -43,6 +44,32 @@ press too.
 | 1 | **Fade** | How much of the loop survives each overdub lap: 100 keeps everything; lower values let older layers fade away, like a delay's feedback. |
 | 2 | **Undo** | Flip it either way to undo the last overdub, then flip it again to redo. Flipping it during an overdub throws that overdub away. |
 | 2 | **Long** | 1 gives longer loops (about 23 s instead of about 5 s); see below. It only switches over while the looper is empty, so set it before recording. |
+| 2 | **Tempo** | BPM for quantize and the click, 40-250 (the knob shows the number). |
+| 3 | **Beats** | Beats per bar. **Off** (0) = free length, as before. 1 = snap to single beats; 2-12 = snap to bars of that many beats. |
+| 3 | **Click** | Metronome level, 0 = silent; only with Beats set. |
+
+## Quantize (Tempo, Beats, Click)
+
+Set Tempo and Beats before you record:
+
+- **The first press** starts recording at once, and bar 1 starts there.
+- **The closing press** snaps the loop to the nearest whole number of bars
+  (at least one):
+  - pressed a little **early**: recording runs on to the bar line, then the
+    loop plays (a double press there stops at the bar line instead);
+  - pressed a little **late**: the extra bit is dropped and playback carries
+    on in time, so the groove doesn't hiccup.
+- **The click** ticks every beat, with a higher accent on each bar. It runs
+  while the looper is empty (play along to get in time), restarts its bar at
+  your first press, follows the loop while it plays, and is silent when
+  stopped. It goes to the output only and is never recorded.
+- **Tempo and Beats are taken when recording starts**, so turning them later
+  doesn't move an existing loop or its click; they apply to the next one.
+- **The screen** shows the BPM while empty and the bar and beat
+  (e.g. `2.3`) otherwise.
+
+There is no external sync yet: the clock is the pedal's own, from the Tempo
+knob.
 
 ## The screen
 
@@ -120,7 +147,9 @@ python3 src/custom/loop/check.py --long
 - `build.py` writes `dist/Loop.ZDL` and needs the TI toolchain.
 - `check.py` runs `loop.c` on the host through a scripted session (record,
   play, overdub, undo, redo, stop, clear, a take past the memory limit) and
-  compares every output sample with the loop it should hold. It needs numpy.
+  compares every output sample with the loop it should hold; then quantize
+  (late and early closes, single beats, 3/4) and the click's timing and
+  accents. It needs numpy.
 - `check.py --long` runs the same checks with the Long regions pointed at host
   buffers, including a 12 s take across all of them.
 - In the emulator, `NAMCHECK_PRESSES=<block,…>` presses the footswitch through

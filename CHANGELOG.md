@@ -21,7 +21,10 @@ dated. Effects in [dist/](dist/) carry their own version in the file
 ### Emulator
 - Fixed a Ziddle decoding bug (local copy): a masked 16-bit stack store in a
   pipelined loop counted as unit D1 instead of D2, so it was replayed on every
-  iteration and overwrote a saved pointer. The split build still disagrees with
+  iteration and overwrote a saved pointer.
+- Two more Ziddle fixes (local copy): the 16-bit shift-by-constant decoded
+  "shift by 8" as 7 and "by 16" as 0 (45 such instructions in our builds),
+  and SPLOOPW loops ran an iteration too many after their exit condition. The split build still disagrees with
   the host in the emulator but plays correctly on the pedal; see
   docs/NAM-RUNTIME-INVESTIGATION.md.
 
@@ -45,6 +48,16 @@ roughly 225 the pedal allows, Eco 181, Eco+ 152, a cab 10 (0.26).
   through any cab in your bank, or a cab's IR against its pedal filter; 48 kHz
   captures can be shown as trained. Measured in the browser
   (`tools/nam_response.js`, matched to the validated C kernel).
+
+### Loop v0.02 (experimental)
+- **Tempo quantize**: Tempo (BPM, 40-250) and Beats (per bar; Off = free)
+  set before recording snap the loop to whole bars: an early closing press
+  records on to the bar line, a late one drops the overshoot and plays on in
+  time.
+- **Click**: a metronome with a bar accent, in the output only (never
+  recorded), with its own level knob.
+- Screen shows the BPM, then bar and beat. Matches the host build in the
+  emulator in every session tested; not yet tested on the pedal.
 
 ### Visual effects (experimental, MS-70CDR firmware 2.10)
 - **Full screen**: Scope v0.03, Spectrum v0.02 and Ring v0.02 draw over the
