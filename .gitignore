@@ -63,16 +63,3 @@ dist/CoverRW.png
 # Blink probe (test D): staged for upload, never shipped
 dist/Blink.ZDL
 dist/Blink.png
-# Scope: experimental (MS-70CDR 2.10 firmware calls), not shipped until hardware-tested
-dist/Scope.ZDL
-dist/Scope.png
-dist/Ring.ZDL
-dist/Ring.png
-dist/Skull.ZDL
-dist/Skull.png
-# Loop: experimental looper, not shipped until hardware-tested
-dist/Loop.ZDL
-dist/Loop.png
-# Spectrum: experimental (MS-70CDR 2.10 firmware calls), not shipped until hardware-tested
-dist/Spectrum.ZDL
-dist/Spectrum.png

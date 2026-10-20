@@ -13,10 +13,8 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
   the cab loader, the PE knob label, a loader test, emulator vs host check,
   then a test file per side for the pedal. Use with NAM full rate, not NAM
   split (no output would carry the amp).
-- **Pedal tests pending:** Loop 0.02 (tempo quantize, click); Skull 0.05
-  and full-screen Scope 0.03 / Spectrum 0.02 / Ring 0.02 (no knob boxes,
-  also after switching patches); NAM split rebuilt with `restrict` back (amp
-  alive on both sides).
+- **Pedal test pending:** NAM split rebuilt with `restrict` back (amp alive
+  on both sides).
 - **MIDISTOMP collaboration** (Luca Matturro, 2026-10-20). He offered:
   - an early MIDISTOMP v2.0 build (two buses with routing, parallel
     processing, the 70CDR as two mono pedals; a new effect-chain screen; a

@@ -3,8 +3,8 @@
 `Loop.ZDL` (FXID 467, Delay group) records a loop, plays it, and lets you
 overdub, undo and redo, all from the footswitch. It runs on the stock
 firmware, with no MIDISTOMP needed. Its screen (state, time and waveform) needs
-MS-70CDR 2.10. Tested on the pedal on 2026-10-19 (v0.01). v0.02 adds
-tempo quantize and a click; not yet tested on the pedal.
+MS-70CDR 2.10. Tested on the pedal on 2026-10-19 (v0.01) and 2026-10-20
+(v0.02, with tempo quantize and the click).
 
 Put Loop last in the patch, so it records everything before it.
 

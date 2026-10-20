@@ -796,6 +796,57 @@
    "cover": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf8P+AAAAAAAAAAAAAAAAB////+AAAAAAAAAAAAAAAB4A/wB4f///////////+ABwA4HADn///////////9gAwAYAYAN///////////+4AYAMADAB////////////eAMAGAAYAP////////////gGADAADAB8PCH/8Ph4fAP4DABgAAYAfDwh//D4eHwD+AgAQAACAHw8If/w+Hh8A/gIAEAAAgB8PCH/DwgAQ//4GADDgAMAfDwh/w8IAEP/+BgAxUADAHw8If8PCABD//gYAMfAAwB8A+H/AAgAQ8P4GADFQAMAfAPh/wAIAEPD+BgAw4ADAHwD4f8ACABDw/gIAEAAAgB8PCH/Dwh4Q8P4CABAAAIAfDwh/w8IeEPD+AwAYAAGAHw8If8PCHhDw/gGADAADAB8PCABDwh4fAP4AwAYABgA/DwgAQ8IeHwD+AGADAAwAfw8IAEPCHh8A/gAwAYAYAN////////////4AHADgcAOf///////////+AAeAP8AeH////////////gAB////+B////////////4AAB/w/4AABABABABABAAAAAAAAAAAAARERERERERAAAAAAAAAAAAH////////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAdnIAAABq7sAAAAV1AAAAAEVFAAAAioigAAAHJQAAAABmZQAAAE7MwAAAByIAAAAARUcAAAAuiIAAAAUlAAAAAEVzAAAAyu6AAAAFdQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAHwAAAAAPgAAAAAH/wAAAAP/gAAAAf/AAAAADyeAAAAHk8AAAAPJ4AAAAAwhgAAABhDAAAADCGAAAAAYIMAAAAwQYAAABggwAAAAGCDAAAAMEGAAAAYIMAAAABgAwAAADABgAAAGADAAAAAMAYAAAAYAwAAAAwBgAAAADweAAAAHg8AAAAPB4AAAAAf/AAAAA/+AAAAB/8AAAAAA+AAAAAB8AAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH///////////////////+A=="
   },
   {
+   "name": "Loop",
+   "fxid": 467,
+   "gid": 8,
+   "category": "Delay",
+   "id": 1076232976,
+   "params": [
+    {
+     "name": "Loop",
+     "max": 100,
+     "default": 100
+    },
+    {
+     "name": "Dry",
+     "max": 100,
+     "default": 100
+    },
+    {
+     "name": "Fade",
+     "max": 100,
+     "default": 100
+    },
+    {
+     "name": "Undo",
+     "max": 1,
+     "default": 0
+    },
+    {
+     "name": "Long",
+     "max": 1,
+     "default": 0
+    },
+    {
+     "name": "Tempo",
+     "max": 250,
+     "default": 120
+    },
+    {
+     "name": "Beats",
+     "max": 12,
+     "default": 0
+    },
+    {
+     "name": "Click",
+     "max": 100,
+     "default": 50
+    }
+   ],
+   "cost": 8.0,
+   "cover": "YDBjwAAAAAAAAAAAAAAAAGAwY8AAAAAAAAAAAAAAAABgzZswAAAAAAAAAAAAAAAAYM2bMAAAAAAAAAAAAAAAAGDNm8AAAAAAAAAAAAAAAABgzZvAAAAAAAAAAAAAAAAAYM2bAAAAAAAAAAAAAAAAAGDNmwAAAAAAAAAAAAAAAAB+MGMAAAAAAAAAAAAAAAAAfjBjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/////////////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMzmYOQM5gAAAAAAAAAAAACqiIBKCogAAAAAAAAAAAAAzMRASgzIAAAAAAAAAAAAAIqCIEoKiAAAAAAAAAAAAACK7MBECuYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/////////////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEImAAAADMoAAAAcmcAAAABFVQAAAAqkAAAAEVUAAAAARVYAAAAKxAAAABnVgAAAAEVUAAAACqQAAAARVQAAAAByJAAAAAykAAAAEVnAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAHwAAAAAPgAAAAAH/wAAAAP/gAAAAf/AAAAADyeAAAAHk8AAAAPJ4AAAAAwhgAAABhDAAAADCGAAAAAYIMAAAAwQYAAABggwAAAAGCDAAAAMEGAAAAYIMAAAABgAwAAADABgAAAGADAAAAAMAYAAAAYAwAAAAwBgAAAADweAAAAHg8AAAAPB4AAAAAf/AAAAA/+AAAAB/8AAAAAA+AAAAAB8AAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  },
+  {
    "name": "Mangle",
    "fxid": 470,
    "gid": 8,
@@ -1007,6 +1058,32 @@
    "cover": "AAAAAAAAAAAAAAAAAAAAAH////////////////////5v///////////////////2f//////////////////wFn//////////////////j/Z8A+AB/////////////3/2fAPgAf////+AH//+AHz/9nw8If//////v9///v9///Z8PCH//////7/f//7/f//2fAPgH/////+/3//+/3//9nwD4B//////v9///v9///Z8PCH//////7/f//7/f//2fDwh//////+/3//m/3//9nw8IAH/////gB//+gB///Z8PCAB//////v///fv///2f//////////7////7///9n//////////+///9+////Z///////////v////v///2f//////////7////7///9n//////////+////+////Z8PCABAPgAf/v////v///2fDwgAQD4AH/7////7///9nw8Ph8PCH//+////+////Z8PD4fDwh///v/AAAAAAD2fAA+HwD4B//7/3+/7/3e9nwAPh8A+Af/+/9/v+/93vZ8AD4fDwh///v/f7+P/d4GfAA+Hw8If//7/3+///3ednw8IAEPCAB/+/9/v//93lZ8PCABDwgAf/v/cAAADd52f//////////7/wA///wABn//////////+/////////Z///////////gAAAAAAAP2b///////////////////9n////////////////////4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABiV3AAAAzuYAAAGZ1cAAAAVVJAAAAKRIAAABVJUAAAAGVSYAAADERAAAAViVgAAABVUkAAAApEIAAAFUiQAAAAUjJwAAAM5MAAABlcnAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAHwAAAAAPgAAAAAH/wAAAAP/gAAAAf/AAAAADyeAAAAHk8AAAAPJ4AAAAAwhgAAABhDAAAADCGAAAAAYIMAAAAwQYAAABggwAAAAGCDAAAAMEGAAAAYIMAAAABgAwAAADABgAAAGADAAAAAMAYAAAAYAwAAAAwBgAAAADweAAAAHg8AAAAPB4AAAAAf/AAAAA/+AAAAB/8AAAAAA+AAAAAB8AAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH///////////////////+A=="
   },
   {
+   "name": "Ring",
+   "fxid": 415,
+   "gid": 8,
+   "category": "Delay",
+   "id": 4064016,
+   "params": [
+    {
+     "name": "Time",
+     "max": 100,
+     "default": 25
+    },
+    {
+     "name": "Size",
+     "max": 100,
+     "default": 35
+    },
+    {
+     "name": "Spin",
+     "max": 100,
+     "default": 60
+    }
+   ],
+   "cost": 8.0,
+   "cover": "////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////AAAAAAAAf////////////wAAAAAAAH////////////8AeP2Y8AB/////////////AHj9mPAAf////////////wBmMfsAAH////////////8AZjH7AAB/////////////AHgx+zAAf////////////wB4MfswAH////////////8AZjGbMAB/////////////AGYxmzAAf////////////wBm/ZjwAH////////////8AZv2Y8AB/////////////AAAAAAAAf////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////w=="
+  },
+  {
    "name": "Rooms",
    "fxid": 472,
    "gid": 8,
@@ -1138,6 +1215,32 @@
    "credit": "Matujuice pack v1.5 by Luca Matturro (MIT)"
   },
   {
+   "name": "Scope",
+   "fxid": 414,
+   "gid": 8,
+   "category": "Delay",
+   "id": 3932944,
+   "params": [
+    {
+     "name": "Time",
+     "max": 100,
+     "default": 30
+    },
+    {
+     "name": "Gain",
+     "max": 100,
+     "default": 25
+    },
+    {
+     "name": "Mode",
+     "max": 1,
+     "default": 0
+    }
+   ],
+   "cost": 8.0,
+   "cover": "/////////////////////4AAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAHjxjx+AAAAAAABgAAAAAAB48Y8fgAAAAAAAYAAAAAABgwZs2AAAAAAAAGAAAAAAAYMGbNgAAAAAAABgAAAAAABjBm8eAAAAAAAAYAAAAAAAYwZvHgAAAAAAAGAAAAAAABsGbBgAAAAAAABgAAAAAAAbBmwYAAAAAAAAYAAAAAAB4PGMH4AAAAAAAGAAAAAAAeDxjB+AAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGIiIiIiIiIiIiIiIiIiIiBgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAB/////////////////////w=="
+  },
+  {
    "name": "Scorch",
    "fxid": 457,
    "gid": 8,
@@ -1230,6 +1333,63 @@
    ],
    "cost": 20.0,
    "cover": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/////n/////////////8AgAAAAAAAAAAAAAAAAAABAIAAAAAAAAAAAAAAAAAAAQCAAAAAAAAAAAAAAAAAAAEAgAAAAAAAAAAAAAAAAAABAIAD/AAAAAB/4AAAAA+QAQCAA/wAAAAA/+AAAAAPMAEAgAP8eHgAAf/j/8AADzABAIA8AHh4AAAeA//AAA4PAQCAPAB4eA8AHgP/x/+MDwEAgDwAeHgPAB4APAf/jA8BAIADgHh4DwAeADwH/4nwAQCAAwB4ePCQHgA8B4AD8AEAgABAf/jwMB4APAeAA/ABAIAAPH/48HAeADwHgAcPAQCAADx/+P1wHgA8B/gHDwEAgAA8eHj88B4APAf4Dw8BAIAfwHh4+fAeADwH+A8PAQCAP8B4ePDwHgA8B4APDwEAgD/AeHjg8B4APAeADw8BAIAAAHh4wPAAADwHgAAAAQCAAAB4eMDwAAA8B/4AAAEAgAAAAACQ8AAAAAf8gAGBAAAAAAAAMPAAAAAH+YAAQQAAAAAAAAAAAAAAAAAAAIEAgAAAAAAAAAAAAAAAAAABAL4AAAAAAAAAAAAAAAAAgQCiAAAAAAAAAAAAAAAAAAEAqj//gAAAAAAAAAAAAAABAP/////n/////////////wA+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADUlNwAAAAABXUAAAAAAAABFV0QAAAAAAclAAAAAAAAAR3dGAAAAAAHIgAAAAAAAAEVVRAAAAAABSUAAAAAAAAA1VTcAAAAAAV1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAAAA+AAAAAAAAAAH/wAAAAAAB/8AAAAAAAAADyeAAAAAAA8ngAAAAAAAAAwhgAAAAAAMIYAAAAAAAAAYIMAAAAAAGCDAAAAAAAAAGCDAAAAAABggwAAAAAAAABgAwAAAAAAYAMAAAAAAAAAMAYAAAAAADAGAAAAAAAAADweAAAAAAA8HgAAAAAAAAAf/AAAAAAAH/wAAAAAAAAAA+AAAAAAAAPgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH///////////////////+A=="
+  },
+  {
+   "name": "Skull",
+   "fxid": 416,
+   "gid": 8,
+   "category": "Delay",
+   "id": 4195088,
+   "params": [
+    {
+     "name": "Sense",
+     "max": 100,
+     "default": 50
+    },
+    {
+     "name": "Decay",
+     "max": 100,
+     "default": 40
+    },
+    {
+     "name": "Shake",
+     "max": 100,
+     "default": 50
+    },
+    {
+     "name": "Boom",
+     "max": 100,
+     "default": 50
+    }
+   ],
+   "cost": 8.0,
+   "cover": "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////4AAf/////////////////gAAA/////////////////gAAAB////////////////gAAAKr///////////////gAAAAVf//////////////gAAACqr//////////////wAAAAEVX/////////////4AAAAqq7/////////////8AAAABVVX////////////+AAAAKru7/////////////gAAAARVVf////////////wAAACqrq7////////////4AAAAFVVVf///////////+AAAAqu7u7////////////gAAABFVVV////////////wAAAKqu7u////////////8AAAAVVVVV////////////AAAiq7u7u////////////wAABVVVVVX///////////8AAA/+6u7r////////////D+A//1VVVf///////////4/y///7u/v///////////+f+H//1VVV////////////n/z///7u7////////////9/8f//VVVf////////////P/H//6/u7//////////////w//4FVV////////////9/7n/4K7u////////////8f9+f5VVVX////////////B8fgL/u7v////////////wAP8AVVVVf////////////4D/AP/v7v////////////8A/wFVVVX/////////////gH8Cv//7/////////////4B+AFVVVf////////////+APAqu7u//////////////gBFVVVVX/////////////+uBf7u/v//////////////0AUXVFX///////////////ABO7o////////////////wFVVQV///////////////8Ir/+O////////////////AAAGBX///////////////AKAK6v///////////////gAABVVf//////////////4AACu/v//////////////+AEVVVf///////////////+7u7u/////////////////1X//X////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////w=="
+  },
+  {
+   "name": "Spectrum",
+   "fxid": 468,
+   "gid": 8,
+   "category": "Delay",
+   "id": 1076364048,
+   "params": [
+    {
+     "name": "Range",
+     "max": 100,
+     "default": 50
+    },
+    {
+     "name": "Fall",
+     "max": 100,
+     "default": 40
+    },
+    {
+     "name": "Tilt",
+     "max": 100,
+     "default": 50
+    }
+   ],
+   "cost": 8.0,
+   "cover": "/////////////////////4AAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAYAAAAAe8fj37xmzAAAAAAGAAAAAHvH49+8ZswAAAAABgAAAAGDNgwGM2b8AAAAAAYAAAABgzYMBjNm/AAAAAAGAAAAAGPHjAY8ZvwAAAAABgAAAABjx4wGPGb8AAAAAAYAAAAAGwYMBjNmzAAAAAAGAAAAABsGDAYzZswAAAAABgAAAAHjB+PGMx7MAAAAAAYAAAAB4wfjxjMezAAAAAAGAAAAAAAAAAAAAAAAAAAABgAAACAAAAAAAAAAAAAAAAYAAAoqqqCAAAAAAAAAAAAGAAAKKqqggAAAAAAAAAAABgAACiqqqIAAAAAAAAAAAAYAAAoqqqigAAAAAAAAAAAGAAIKKqqqoAAAAAAAAAAABgACCqqqqqCAAAAAAAAAAAYAAgqqqqqggAAAAAAAAAAGAAIKqqqqooAAAAAAAAAABgACCqqqqqKAAAAAAAAAAAYAAqqqqqqigAAAAAAAAAAGAAqqqqqqqoIAAAAAAAAABgKKqqqqqqqCAAAAAAAAAAYCiqqqqqqqggAAAAAAAAAGAoqqqqqqqqIAAAAAAAAABgKKqqqqqqqigAAAAAAAAAYCiqqqqqqqqoAAAAAAAAAGgqqqqqqqqqqAAAAAAAAABoKqqqqqqqqqggAAAAAAAAaCqqqqqqqqqooAAAAAAAAGgqqqqqqqqqqKAAAAAAAABqqqqqqqqqqqigAAAAAAAAaqqqqqqqqqqooAAAAAAAAGqqqqqqqqqqqqCAAAAAAABqqqqqqqqqqqqggAAAAAAAaqqqqqqqqqqqoIAAAAAAAGqqqqqqqqqqqqiAAAAAAABqqqqqqqqqqqqooAAAAAAAaqqqqqqqqqqqqqAAAAAAAGqqqqqqqqqqqqqgAAAAAABqqqqqqqqqqqqqoIAAAAAAaqqqqqqqqqqqqqKAAAAAAGqqqqqqqqqqqqqigAAAAABqqqqqqqqqqqqqooAAAAAAaqqqqqqqqqqqqqKAAAAAAGqqqqqqqqqqqqqqggAAAABqqqqqqqqqqqqqqoIAAAAAaqqqqqqqqqqqqqqqqqqqqv/////////////////////AgAIABAAAgAIABAAAgAIAAAACAAAAAAACAAAAAAACAAAAAgAAAAAAAgAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAA=="
   },
   {
    "name": "Spiral",
@@ -13119,90 +13279,6 @@
    "gid": 8,
    "category": "Delay",
    "id": 1075839760,
-   "params": [
-    {
-     "name": "Time",
-     "max": 100,
-     "default": 40
-    },
-    {
-     "name": "Feedbk",
-     "max": 100,
-     "default": 45
-    },
-    {
-     "name": "Crush",
-     "max": 100,
-     "default": 0
-    },
-    {
-     "name": "Tremolo",
-     "max": 100,
-     "default": 0
-    },
-    {
-     "name": "Pitch",
-     "max": 100,
-     "default": 0
-    },
-    {
-     "name": "Mix",
-     "max": 100,
-     "default": 50
-    }
-   ],
-   "cost": 20.0,
-   "cover": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAIAgCAIAgCAIAgCAIAgAAwHAcBwHAcBwHAcBwHAcBAOD4Pg+D4Pg+D4Pg+D4PgwDx/H8fx/H8fx/H8fx/H8cA+/7/v+/7/v+/7/v+/7/vAP///////////////////wD///////////////////8A////////////////////AP//+OPHjjwI/gD//////wD///jjx448CP4A//////8A///448eOPAj+AP//////AP7/+AI4gCP4/j/////+fwD9f/gCOIAj+P4//////78A/X/4AjiAI/j+P/////9/APu/+AIAgCOI/gf//////wD4P/gCAIAjiP4H/////38A///4AgCAI4j+B///////AP//+OI4jiOI/j///////wD///jiOI4jiP4///////8A///44jiOI4j+P///////AP//+OI4jjwIAgD//////wD///jiOI48CAIA//////8A///44jiOPAgCAP//////AP///////////////////wD///////////////////8A+/7/v+/7/v+/7/v+/7/vAPH8fx/H8fx/H8fx/H8fxwDg+D4Pg+D4Pg+AAPg+D4MAwHAcBwHAcBwHAABwHAcBAIAgCAIAgCAIAgCAIAgCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAd1cAAAO7sygAADZTUAAAACJ0AAACIiqoAABFVFAAAAAidgAAAzMrMAAARlJwAAAAIlQAAAIiKqgAAEVRUAAAACdXAAACO7MoAAA1NlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAHwAAAAAPgAAAAAH/wAAAAP/gAAAAf/AAAAADyeAAAAHk8AAAAPJ4AAAAAwhgAAABhDAAAADCGAAAAAYIMAAAAwQYAAABggwAAAAGCDAAAAMEGAAAAYIMAAAABgAwAAADABgAAAGADAAAAAMAYAAAAYAwAAAAwBgAAAADweAAAAHg8AAAAPB4AAAAAf/AAAAA/+AAAAB/8AAAAAA+AAAAAB8AAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH///////////////////+A==",
-   "legacy": true
-  },
-  {
-   "name": "Mangle (old 467)",
-   "fxid": 467,
-   "gid": 8,
-   "category": "Delay",
-   "id": 1076232976,
-   "params": [
-    {
-     "name": "Time",
-     "max": 100,
-     "default": 40
-    },
-    {
-     "name": "Feedbk",
-     "max": 100,
-     "default": 45
-    },
-    {
-     "name": "Crush",
-     "max": 100,
-     "default": 0
-    },
-    {
-     "name": "Tremolo",
-     "max": 100,
-     "default": 0
-    },
-    {
-     "name": "Pitch",
-     "max": 100,
-     "default": 0
-    },
-    {
-     "name": "Mix",
-     "max": 100,
-     "default": 50
-    }
-   ],
-   "cost": 20.0,
-   "cover": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAIAgCAIAgCAIAgCAIAgAAwHAcBwHAcBwHAcBwHAcBAOD4Pg+D4Pg+D4Pg+D4PgwDx/H8fx/H8fx/H8fx/H8cA+/7/v+/7/v+/7/v+/7/vAP///////////////////wD///////////////////8A////////////////////AP//+OPHjjwI/gD//////wD///jjx448CP4A//////8A///448eOPAj+AP//////AP7/+AI4gCP4/j/////+fwD9f/gCOIAj+P4//////78A/X/4AjiAI/j+P/////9/APu/+AIAgCOI/gf//////wD4P/gCAIAjiP4H/////38A///4AgCAI4j+B///////AP//+OI4jiOI/j///////wD///jiOI4jiP4///////8A///44jiOI4j+P///////AP//+OI4jjwIAgD//////wD///jiOI48CAIA//////8A///44jiOPAgCAP//////AP///////////////////wD///////////////////8A+/7/v+/7/v+/7/v+/7/vAPH8fx/H8fx/H8fx/H8fxwDg+D4Pg+D4Pg+AAPg+D4MAwHAcBwHAcBwHAABwHAcBAIAgCAIAgCAIAgCAIAgCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAd1cAAAO7sygAADZTUAAAACJ0AAACIiqoAABFVFAAAAAidgAAAzMrMAAARlJwAAAAIlQAAAIiKqgAAEVRUAAAACdXAAACO7MoAAA1NlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAHwAAAAAPgAAAAAH/wAAAAP/gAAAAf/AAAAADyeAAAAHk8AAAAPJ4AAAAAwhgAAABhDAAAADCGAAAAAYIMAAAAwQYAAABggwAAAAGCDAAAAMEGAAAAYIMAAAABgAwAAADABgAAAGADAAAAAMAYAAAAYAwAAAAwBgAAAADweAAAAHg8AAAAPB4AAAAAf/AAAAA/+AAAAB/8AAAAAA+AAAAAB8AAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH///////////////////+A==",
-   "legacy": true
-  },
-  {
-   "name": "Mangle (old 468)",
-   "fxid": 468,
-   "gid": 8,
-   "category": "Delay",
-   "id": 1076364048,
    "params": [
     {
      "name": "Time",

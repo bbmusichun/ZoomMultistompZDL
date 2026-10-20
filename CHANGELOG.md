@@ -6,6 +6,12 @@ dated. Effects in [dist/](dist/) carry their own version in the file
 
 ## Unreleased
 
+### In dist/
+- **Loop, Skull, Scope, Spectrum and Ring** now ship in `dist/`, tested on
+  the MS-70CDR 2.10 (2026-10-20): Loop 0.02, Skull 0.05, Scope 0.03,
+  Spectrum 0.02, Ring 0.02. Their screens need firmware 2.10; elsewhere they
+  run as audio effects (Loop) or pass the sound through.
+
 ### NAM engine 0.26 (works on the pedal)
 - **Eco+**: half-rate NAM, with a correction EQ the loader fits to each
   capture: 152 instead of 194, for amp-only captures into a cab. It sounds
@@ -57,7 +63,7 @@ roughly 225 the pedal allows, Eco 181, Eco+ 152, a cab 10 (0.26).
 - **Click**: a metronome with a bar accent, in the output only (never
   recorded), with its own level knob.
 - Screen shows the BPM, then bar and beat. Matches the host build in the
-  emulator in every session tested; not yet tested on the pedal.
+  emulator in every session tested, and works on the pedal (2026-10-20).
 
 ### Visual effects (experimental, MS-70CDR firmware 2.10)
 - **Full screen**: Scope v0.03, Spectrum v0.02 and Ring v0.02 draw over the

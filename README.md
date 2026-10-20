@@ -13,7 +13,7 @@ This was a good amount of work and tokens, please consider to [Sponsor this proj
 
 **In the press:** [Vibe coding is turning the music gear world upside down](https://www.theverge.com/gadgets/1013493/vibe-coding-ai-music-gear-hacking-custom-firmware) (The Verge, Terrence O'Brien, October 19, 2026) features this project and the MS-70CDR work.
 
-<p align="center"><img src="graphics/thumb_effects.png" width="900" alt="Every effect's pedal screen: the 22-effect pack, the experimental looper and live screens, a NAM and a CAB example, and the included Matujuice pack"></p>
+<p align="center"><img src="graphics/thumb_effects.png" width="900" alt="Every effect's pedal screen: the 22-effect pack, the looper and live screens, a NAM and a CAB example, and the included Matujuice pack"></p>
 
 **New here?** This is a pack of 22 extra effects plus a free browser-based
 [Patch Editor](https://themanro.github.io/ZoomMultistompZDL/tools/patch_editor.html)
@@ -315,9 +315,10 @@ Made for synths and drum machines as much as guitar. Their IDs are 480 and
 485-496. If you installed a very early Howl build (ID 480), reinstall Howl from
 dist/ before adding DualShft.
 
-## Experimental: a looper and live screens
+## A looper and live screens
 
-These run on the stock MS-70CDR firmware. Their screens need firmware 2.10;
+These run on the stock MS-70CDR firmware and are in [dist/](dist/), tested on
+the pedal (2026-10-20). Their screens need firmware 2.10;
 on any other firmware they keep working as audio effects, and the screen
 effects simply pass the sound through. The live screens use the whole display:
 their knobs are on the pedal's knob pages, as usual.
@@ -342,8 +343,8 @@ their knobs are on the pedal's knob pages, as usual.
 | **Ring** | A rotating ring that follows the signal, full screen. |
 | **Skull** | A shaded 3D skull that reacts to your playing, idles with animations when you stop, and explodes at the loudest peaks. |
 
-They aren't in [dist/](dist/) yet: build them from `src/custom/<name>/build.py`.
-How an effect can animate its own screen is in
+Loop's Long mode (extra RAM) is still experimental; see its
+[README](src/custom/loop/README.md). How an effect can animate its own screen is in
 [animated-covers.md](docs/pedal-research/animated-covers.md), built on Alexander
 Lim's ([Leemuzhko](https://github.com/Leemuzhko/ZOOM_development)) firmware notes.
 
