@@ -182,8 +182,8 @@ The pedal accepts a single firmware image, not loose ZDLs. Workflow:
 1. `python3 build_all.py hello` → `dist/HELLO.ZDL`.
 2. Open `Zoom-Firmware-Editor-master/ZoomFirmwareEditor.jar`.
 3. Load the official MS-70CDR firmware (the `.bin` Zoom distributes).
-   Backup blobs are in [firmware/](../firmware/) (`boot.bin`, `Main.bin`,
-   `FS.bin`, `Preset.bin`).
+   Backup blobs go in `firmware/` (`boot.bin`, `Main.bin`, `FS.bin`,
+   `Preset.bin`), kept locally ([STOCK-FILES.md](../docs/STOCK-FILES.md)).
 4. **Add** `HELLO.ZDL` to the FX list (do not replace `LINESEL.ZDL` —
    `sort_index = 250` lets HELLO sit alongside the originals).
 5. Save the modified firmware to a new `.bin`.

@@ -573,6 +573,10 @@ are in [src/airwindows/README.md](src/airwindows/README.md).
 
 ## Build From Source
 
+Zoom's and TI's files (stock effects, firmware, the stock handler blobs the
+linker uses, TI's manuals) are not in this repository; see
+[STOCK-FILES.md](docs/STOCK-FILES.md) for what a build needs locally.
+
 Building requires Python 3.10+ and the TI C6000 Code Generation Tools
 (v8.5.0). Installing prebuilt effects from [dist/](dist/) does not.
 
@@ -603,8 +607,8 @@ whether params materialized. It is authoritative about instruction semantics and
 **cannot see firmware readiness** — it passed four `_init` builds that froze the
 pedal. Setup and limits: [docs/EMULATOR-TESTING.md](docs/EMULATOR-TESTING.md).
 
-`build/disassemble_zdl.py` disassembles any ZDL, ours or one of the ~830 in
-[stock_zdls/](stock_zdls/). Diffing a generated handler against the stock
+`build/disassemble_zdl.py` disassembles any ZDL, ours or one of Zoom's ~830 stock
+effects in `stock_zdls/` (kept locally: [STOCK-FILES.md](docs/STOCK-FILES.md)). Diffing a generated handler against the stock
 equivalent has been the most productive debugging tool in the project.
 
 ## Technical Notes
@@ -622,7 +626,7 @@ This repo builds loadable Zoom `.ZDL` effects without Zoom's unreleased SDK:
 | [src/airwindows/](src/airwindows/) | Airwindows-derived ports. |
 | [src/hardware_probes/](src/hardware_probes/) | Diagnostic ZDLs used to map the pedal runtime ABI. |
 | [dist/](dist/) | Release `.ZDL` files; never probes. |
-| [stock_zdls/](stock_zdls/) | Tracked stock ZDL corpus used for comparison and layout ground truth. |
+| `stock_zdls/` | Zoom's stock effects, used for comparison and layout ground truth. Kept locally, not in the repository ([STOCK-FILES.md](docs/STOCK-FILES.md)). |
 
 Known runtime map for custom ZDLs:
 
@@ -712,23 +716,28 @@ my MS-70CDR" is more useful than "works everywhere."
 
 ## License
 
-See [LICENSE](LICENSE). The original work in this fork — the custom effects in
-`src/custom/`, the browser tools in `tools/`, the notes in `docs/` and the cover
-art in `graphics/` — is MIT.
+Everything in this repository is MIT; see [LICENSE](LICENSE):
 
-That grant deliberately stops there. The upstream toolchain this is forked from,
-[repeat98/ZoomMultistompZDL](https://github.com/repeat98/ZoomMultistompZDL),
-publishes no licence file, so inherited material stays under its author's
-default copyright and is not relicensed here. Airwindows DSP in
-`src/airwindows/` is MIT by Chris Johnson/Airwindows under its own terms. The
-Matujuice effects in `dist/` (Breather, Choral, DirtBox, DualShft, DubSiren,
-EuGate, GridDly, SGNL, Scrub, Sweep, SyncEQ, WaveFold), and the renders of
-their screens in `graphics/` and the effects overview, are MIT by Luca
-Matturro; his licence is in [dist/matujuice/LICENSE](dist/matujuice/LICENSE). Zoom
-firmware, stock effect binaries and the TI toolchain belong to Zoom Corporation
-and Texas Instruments; they are referenced for interoperability and
-reverse-engineering research only, and none of their code is redistributed
-here.
+- **This fork's own work** (the custom effects in `src/custom/`, the browser
+  tools in `tools/`, the notes in `docs/`, the cover art in `graphics/`):
+  MIT, Roman Rusinov.
+- **The upstream toolchain** this is forked from,
+  [repeat98/ZoomMultistompZDL](https://github.com/repeat98/ZoomMultistompZDL)
+  (the linker, the ZDL tools, the ABI and reverse-engineering notes, the first
+  effects): MIT, Jannik Assfalg.
+- **Airwindows DSP** in `src/airwindows/`: MIT, Chris Johnson/Airwindows,
+  under its own terms.
+- **The Matujuice effects** in `dist/` (Breather, Choral, DirtBox, DualShft,
+  DubSiren, EuGate, GridDly, SGNL, Scrub, Sweep, SyncEQ, WaveFold) and the
+  renders of their screens in `graphics/` and the effects overview: MIT, Luca
+  Matturro; his licence is in [dist/matujuice/LICENSE](dist/matujuice/LICENSE).
+
+Zoom's firmware and stock effects and TI's toolchain and manuals belong to
+Zoom Corporation and Texas Instruments. They are used locally for
+interoperability and reverse-engineering research and are not in this
+repository ([STOCK-FILES.md](docs/STOCK-FILES.md)). One exception is being
+worked on: the built effects still carry knob-handler code derived from a stock
+Zoom effect, which will be replaced with handlers of our own.
 
 Not affiliated with or endorsed by Zoom Corporation. Flashing custom effects is
 at your own risk.

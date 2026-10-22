@@ -32,6 +32,16 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
 
 ## Later
 
+- **Clean-room edit handlers.** Every built effect carries knob handlers
+  cloned from the stock LineSel effect and a divide routine from a stock
+  effect (docs/STOCK-FILES.md). Write our own from the documented ABI
+  (docs/EDIT-HANDLER-ABI.md), test them on the pedal, then rebuild `dist/`
+  and the NAM/cab templates. Needed before Modwerk can list the effects
+  without stock code. Also: the Patch Editor's effect list embeds the stock
+  effects' screen pictures.
+- **Regenerate the handler blobs** from the user's own stock effects (a
+  script), until the clean-room handlers replace them.
+
 - **Install from the browser (REA research).** Work out how Zoom Effect
   Manager sends a ZDL to the pedal, so the Patch Editor and the NAM/cab
   loaders can install effects over Web MIDI without Effect Manager (and the

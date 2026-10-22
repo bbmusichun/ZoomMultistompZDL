@@ -215,6 +215,15 @@ def main() -> None:
         else:
             db["custom" if is_custom else "stock"].append(e)
 
+    # Zoom's stock effects are local only (docs/STOCK-FILES.md). Without them,
+    # keep the stock entries the current effect list already has: dropping them
+    # would make the Patch Editor show every stock effect as unknown.
+    if not any((ROOT / "stock_zdls").glob("*.ZDL")):
+        current = ROOT / "tools" / "effects_db.json"
+        db["stock"] = json.loads(current.read_text())["stock"] if current.exists() else []
+        print(f"stock_zdls/ is not here (docs/STOCK-FILES.md): kept the {len(db['stock'])} stock "
+              "entries from tools/effects_db.json")
+
     # Reserved self-service NAM identities; templates contain no capture data.
     nam_slots = json.loads((ROOT / 'tools' / 'nam_template' / 'multi.json').read_text())['slots']
     for meta in nam_slots:

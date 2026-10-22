@@ -236,7 +236,7 @@ Rewire built clean at 7 knobs and outlined at 8 with no warning.
 | [build/linker.py](build/linker.py) | `.obj` → `.ZDL`; `materialize_init` lives here |
 | [build/init_materialize.asm](build/init_materialize.asm) | the candidate `_init`, with its full history in the header |
 | [tools/emulator/](tools/emulator/) | the headless test rig |
-| [stock_zdls/](stock_zdls/) | ~830 stock ZDLs — ground truth for everything |
+| `stock_zdls/` | ~830 stock ZDLs — ground truth for everything (local only, [docs/STOCK-FILES.md](docs/STOCK-FILES.md)) |
 
 ## 2026-09-10 follow-up fix pass
 

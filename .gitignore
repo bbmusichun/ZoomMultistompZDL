@@ -63,3 +63,24 @@ dist/CoverRW.png
 # Blink probe (test D): staged for upload, never shipped
 dist/Blink.ZDL
 dist/Blink.png
+# Zoom's and TI's files: kept locally, never published (docs/STOCK-FILES.md).
+# Zoom firmware and what was extracted from it
+firmware/*
+!firmware/wrap_for_dis6x.py
+# Zoom's stock effects (the effect database and analysis tools read them)
+stock_zdls/
+# Code extracted from stock effects; the linker needs these locally
+build/linesel_handlers.bin
+build/air_knob3_edit.bin
+build/divf_rts.bin
+build/exciter_outlv_edit.bin
+build/lofidly_handlers.bin
+build/syncprobe_handler*.bin
+build/syncprobe_v2_handler.bin
+build/TI_section_flags.bin
+build/c6xabi_attributes.bin
+ofd_zdl.txt
+# TI manuals: link to ti.com instead (docs/TI-PDF-NOTES.md)
+docs/sprab89b.pdf
+docs/sprui03f.pdf
+docs/sprui04g.pdf

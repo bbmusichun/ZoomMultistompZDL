@@ -751,6 +751,16 @@ _COMPACT_MVK_L2_B4 = {
 }
 
 
+def _local_stock_file(path) -> Path:
+    """The linker's blobs from stock Zoom effects and TI's toolchain are kept
+    locally, not in the repository (docs/STOCK-FILES.md)."""
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"{path} is missing: it holds code from a stock Zoom effect or TI's "
+                                "toolchain and is kept locally, not in the repository; see docs/STOCK-FILES.md")
+    return path
+
+
 def _patch_linesel_knob_clone(blob: bytes, knob_id: int, param_byte_off: int) -> bytes:
     """Clone LineSel's known-good knob1 handler block and retarget it.
 
@@ -950,7 +960,7 @@ def link(cfg: LinkerConfig) -> None:
     object_symbol_names = {sym['name'] for sym in obj.symbols if sym['name']}
 
     # ----- Load divf RTS -----
-    divf_code = Path(cfg.divf_rts_path).read_bytes()
+    divf_code = _local_stock_file(cfg.divf_rts_path).read_bytes()
 
     # ----- Load handler blob (or fall back to NOP_RETURN handlers) -----
     handler_blob = b""
@@ -958,7 +968,7 @@ def link(cfg: LinkerConfig) -> None:
     handler_path = Path(cfg.handler_blob_path) if cfg.handler_blob_path else None
     use_real_handlers = handler_path is not None and handler_path.exists()
     if use_real_handlers:
-        handler_blob = handler_path.read_bytes()
+        handler_blob = _local_stock_file(handler_path).read_bytes()
         print(f"  handlers: {handler_path.name} ({len(handler_blob)} bytes)")
 
     # ----- Build LineSel-cloned synthetic edit handlers -----
@@ -967,6 +977,8 @@ def link(cfg: LinkerConfig) -> None:
     synth_specs: list[tuple[int, int, int]] = []
     if cfg.synthesize_linesel_edit_handlers:
         if not use_real_handlers:
+            if handler_path is not None:
+                _local_stock_file(handler_path)   # say why it's missing (docs/STOCK-FILES.md)
             raise RuntimeError("LineSel handler synthesis requires handler_blob_path")
         for i in range(len(cfg.params)):
             if i >= cfg.synth_edit_start_index:
@@ -988,7 +1000,7 @@ def link(cfg: LinkerConfig) -> None:
     use_knob3 = (knob3_path is not None and knob3_path.exists()
                  and len(cfg.params) >= 3)
     if use_knob3:
-        knob3_blob = knob3_path.read_bytes()
+        knob3_blob = _local_stock_file(knob3_path).read_bytes()
         print(f"  knob3:    {knob3_path.name} ({len(knob3_blob)} bytes)")
 
     # ----- Screen image -----
@@ -1664,7 +1676,7 @@ def link(cfg: LinkerConfig) -> None:
     # Exciter's 62-byte blob verbatim (Tag_ISA=C6740, ABI_DSBT/PID/PIC
     # all matching the bare-metal-non-DSBT model we actually produce).
     c6xabi_path = Path(__file__).resolve().parent / "c6xabi_attributes.bin"
-    c6xabi_attrs = c6xabi_path.read_bytes()
+    c6xabi_attrs = _local_stock_file(c6xabi_path).read_bytes()
 
     # Stock ZDL ELFs place .text at file offset 0x40 and put the program
     # header table near EOF, immediately before the section headers. Keep
