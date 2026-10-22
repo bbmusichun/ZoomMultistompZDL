@@ -26,9 +26,15 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
     Loop could also start and stop with it;
   - Spectrum and Scope as permanent MIDISTOMP menu items;
   - submitting the projects to the Modwerk app.
-  Needs from us: what MIDISTOMP exposes to effects (tempo, transport), and
-  an agreed way for an effect to tell whether MIDISTOMP is there (Loop's Long
-  mode already reads its services block).
+  What MIDISTOMP exposes (2026-10-22): a transport block at `0x1181FF00`
+  with a magic number, clock count, running flag and tempo
+  ([docs/MIDISTOMP-TRANSPORT.md](docs/MIDISTOMP-TRANSPORT.md)). Next: Loop
+  first, then Hydra and Spiral.
+  - Mac test build M3b7 (mixer, knob 8 fix):
+    [midistomp#48](https://github.com/matujuice/zoom-ms-midistomp/issues/48).
+    It needs our own copy of Zoom's MS-70CDR 2.10 Mac updater. Back up all
+    50 patches first. Then run the DSP cost probes on it (does it raise the
+    limit?).
 
 ## Later
 
@@ -69,6 +75,8 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
   meter effect).
 - **Eco+ level tracking** (the correction EQ is fitted at three playing
   levels; follow the level instead).
+- **Maybe: a cloud reverb** (a big, diffuse ambient reverb, BigSky-style).
+  Paused 2026-10-22; check the DSP budget first.
 - **Tuner knob reset check.** Stomphacks found that MS Plus pedals write a
   zero into one coefficient slot when the tuner closes (it reset their first
   knob). Check whether the ZDL pedals do anything similar to our first knob.
