@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File Probe</title>
+<style>
+  :root { --bg:#111312; --panel:#1a1d1b; --line:#2c312e; --text:#e4e8e5; --dim:#8d968f; --accent:#7fd1a0; --warn:#e6b450; --bad:#e07a6a; }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg:#f4f6f4; --panel:#fff; --line:#d5dbd6; --text:#1b1f1c; --dim:#5d665f; --accent:#1f7a48; --warn:#9a6a00; --bad:#b23b2a; } }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 -apple-system, system-ui, sans-serif; }
+  main { max-width:860px; margin:0 auto; padding:24px 16px 48px; display:grid; gap:16px; }
+  h1 { font-size:22px; margin:0; }
+  p { margin:0; color:var(--dim); max-width:65ch; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; display:grid; gap:10px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  button { font:inherit; padding:7px 12px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--text); cursor:pointer; }
+  button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  button:disabled { opacity:.45; cursor:default; }
+  .status { font-family:ui-monospace, Menlo, monospace; font-size:13px; }
+  .ok { color:var(--accent); } .warn { color:var(--warn); } .bad { color:var(--bad); }
+  ul.files { margin:0; padding-left:20px; columns:3 180px; font-family:ui-monospace, Menlo, monospace; font-size:13px; }
+  pre { margin:0; max-height:360px; overflow:auto; font:12px/1.45 ui-monospace, Menlo, monospace; color:var(--dim); white-space:pre-wrap; word-break:break-all; }
+</style>
+</head>
+<body>
+<main>
+  <h1>File Probe <span class="status" style="color:var(--dim)">read-only</span></h1>
+  <p>Asks the pedal whether it answers Zoom's file commands as the ZD2 pedals do (from zoom-zt2). This page only sends the commands listed below: identity, editor mode, disk usage, list files, close the listing. It never opens, writes or deletes a file. Close Zoom Effect Manager first (it holds the MIDI port), and use Chrome or Edge.</p>
+
+  <section>
+    <div class="row"><button id="connect">Connect</button><span id="conn" class="status">Not connected</span></div>
+  </section>
+
+  <section>
+    <div class="row">
+      <button data-step="editor" disabled>1. Editor mode on</button>
+      <button data-step="usage" disabled>2. Disk usage</button>
+      <button data-step="list" disabled>3. List files</button>
+    </div>
+    <div class="row">
+      <button data-step="pcmode" disabled>Optional: PC mode on</button>
+      <button data-step="pcmodeoff" disabled>PC mode off</button>
+      <span class="status" style="color:var(--dim)">Only if steps 2 and 3 get no answer.</span>
+    </div>
+    <div id="result" class="status"></div>
+    <ul id="files" class="files"></ul>
+  </section>
+
+  <section>
+    <div class="row"><strong>Log</strong><button id="copy">Copy log</button></div>
+    <pre id="log"></pre>
+  </section>
+</main>
+<script>
+"use strict";
+// Commands from mungewell/zoom-zt2 (MIT), zoomzt2.py, with the device id the pedal reports instead of the G1Four's 0x6e.
+// Every message this page can send is built here and nowhere else.
+let devId = null, midiIn = null, midiOut = null, waiter = null;
+const lines = [];
+const $ = id => document.getElementById(id);
+const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(' ');
+function log(text) { lines.push(new Date().toISOString().slice(11, 23) + '  ' + text); $('log').textContent = lines.join('\n'); $('log').scrollTop = 1e9 }
+function result(text, cls = '') { $('result').className = 'status ' + cls; $('result').textContent = text }
+
+const zoom = body => [0xf0, 0x52, 0x00, devId, ...body, 0xf7];
+const nameBytes = name => [...Array.from(name, c => c.charCodeAt(0)), 0x00];
+const MESSAGES = {
+  identity: () => [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7],
+  editorOn: () => zoom([0x50]),
+  pcmodeOn: () => zoom([0x52]),
+  pcmodeOff: () => zoom([0x53]),
+  diskUsage: () => zoom([0x60, 0x29, 0x00, 0x00, 0x00, 0x00, 0x00]),
+  findFirst: () => zoom([0x60, 0x25, 0x00, 0x00, ...nameBytes('*')]),
+  findNext: () => zoom([0x60, 0x26, 0x00, 0x00, ...nameBytes('*')]),
+  closeA: () => zoom([0x60, 0x21, 0x40, 0x00, 0x00, 0x00, 0x00]),
+  closeB: () => zoom([0x60, 0x09]),
+};
+
+// Send one message and wait for the next SysEx reply (or a timeout).
+function ask(name, timeout = 1500) {
+  const bytes = MESSAGES[name]();
+  return new Promise(resolve => {
+    const timer = setTimeout(() => { waiter = null; log('    no reply (' + timeout + ' ms)'); resolve(null) }, timeout);
+    waiter = data => { clearTimeout(timer); waiter = null; resolve(data) };
+    log('OUT ' + name.padEnd(10) + hex(bytes));
+    midiOut.send(bytes);
+  });
+}
+
+function onMessage(event) {
+  const data = event.data;
+  if (data[0] !== 0xf0) return;
+  log('IN             ' + hex(data));
+  if (waiter) waiter(data);
+}
+
+$('connect').onclick = async () => {
+  try {
+    const access = await navigator.requestMIDIAccess({ sysex: true });
+    const pick = ports => Array.from(ports.values()).find(port => /zoom/i.test(port.name));
+    midiIn = pick(access.inputs); midiOut = pick(access.outputs);
+    if (!midiIn || !midiOut) { $('conn').textContent = 'No ZOOM MIDI port. Pedal on USB? Effect Manager closed?'; $('conn').className = 'status bad'; return }
+    midiIn.onmidimessage = onMessage;
+    log('ports: ' + midiIn.name + ' / ' + midiOut.name);
+    const reply = await ask('identity');
+    // Identity reply: F0 7E <ch> 06 02 52 <device id> ...
+    if (!reply || reply[3] !== 0x06 || reply[4] !== 0x02 || reply[5] !== 0x52) { devId = null; $('conn').textContent = 'No identity reply from a Zoom pedal.'; $('conn').className = 'status bad'; return }
+    devId = reply[6];
+    const names = { 0x61: 'MS-70CDR', 0x58: 'MS-50G', 0x5f: 'MS-60B' };
+    $('conn').textContent = 'Connected: ' + (names[devId] ?? 'unknown model') + ' (device id 0x' + devId.toString(16) + ')';
+    $('conn').className = 'status ok';
+    document.querySelectorAll('[data-step]').forEach(button => button.disabled = false);
+  } catch (error) { $('conn').textContent = 'MIDI access failed: ' + error.message; $('conn').className = 'status bad' }
+};
+
+const STEPS = {
+  async editor() { const reply = await ask('editorOn'); result(reply ? 'Editor mode: answered.' : 'Editor mode: no answer (the pedal may not acknowledge it; carry on).', reply ? 'ok' : 'warn') },
+  async pcmode() { const reply = await ask('pcmodeOn'); result(reply ? 'PC mode: answered.' : 'PC mode: no answer.', reply ? 'ok' : 'warn') },
+  async pcmodeoff() { const reply = await ask('pcmodeOff'); result(reply ? 'PC mode off: answered.' : 'PC mode off: no answer.', reply ? 'ok' : 'warn') },
+  async usage() {
+    const r = await ask('diskUsage');
+    if (!r) return result('Disk usage: no answer.', 'warn');
+    // zoom-zt2: reply F0 52 00 id 60 04 29 ..., max at data[10..14], free at data[15..19] (7-bit groups, data = without F0).
+    const d = Array.from(r).slice(1), word = at => d[at] + d[at + 1] * 128 + d[at + 2] * 16384 + d[at + 3] * 2097152 + d[at + 4] * 268435456;
+    if (d[3] !== 0x60 || d[4] !== 0x04 || d.length < 21) return result('Disk usage: answered, but not in the ZD2 shape. See the log.', 'warn');
+    const max = word(10), free = word(15);
+    result('Disk usage: ' + free.toLocaleString() + ' of ' + max.toLocaleString() + ' bytes free.', 'ok');
+  },
+  async list() {
+    $('files').textContent = '';
+    const names = [];
+    let reply = await ask('findFirst');
+    for (let guard = 0; reply && guard < 600; guard++) {
+      const d = Array.from(reply).slice(1);
+      if (d[3] !== 0x60 || d[4] !== 0x04) break;
+      const end = d.indexOf(0, 14), name = String.fromCharCode(...d.slice(14, end > 14 ? end : 27));
+      if (!name) break;
+      names.push(name);
+      const item = document.createElement('li'); item.textContent = name; $('files').append(item);
+      reply = await ask('findNext');
+    }
+    await ask('closeA'); await ask('closeB');
+    result(names.length ? 'Files listed: ' + names.length + '.' : 'List files: no names came back. See the log.', names.length ? 'ok' : 'warn');
+  },
+};
+document.querySelectorAll('[data-step]').forEach(button => button.onclick = async () => {
+  document.querySelectorAll('[data-step]').forEach(b => b.disabled = true);
+  try { await STEPS[button.dataset.step]() } finally { document.querySelectorAll('[data-step]').forEach(b => b.disabled = false) }
+});
+$('copy').onclick = () => navigator.clipboard.writeText(lines.join('\n')).then(() => result('Log copied.', 'ok'));
+</script>
+</body>
+</html>

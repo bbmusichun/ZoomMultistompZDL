@@ -24,8 +24,11 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
   - making our effects follow MIDI clock (tempo from MIDISTOMP, as his
     v1.6+ effects do): Loop's Tempo, Hydra, Spiral first; a clock-locked
     Loop could also start and stop with it;
-  - Spectrum and Scope as permanent MIDISTOMP menu items;
+  - Spectrum and Scope as permanent MIDISTOMP menu items (confirmed
+    2026-10-23: he will look at the repo after his v2 performance mode);
   - submitting the projects to the Modwerk app.
+  - After the v2 release: metering and mastering tools with him (Spectrum,
+    a LUFS meter and similar), to make the MS-70CDR an end-of-chain pedal.
   What MIDISTOMP exposes (2026-10-22): a transport block at `0x1181FF00`
   with a magic number, clock count, running flag and tempo
   ([docs/MIDISTOMP-TRANSPORT.md](docs/MIDISTOMP-TRANSPORT.md)). Next: Loop
@@ -33,8 +36,8 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
   - Mac test build M3b7 (mixer, knob 8 fix):
     [midistomp#48](https://github.com/matujuice/zoom-ms-midistomp/issues/48).
     It needs our own copy of Zoom's MS-70CDR 2.10 Mac updater. Back up all
-    50 patches first. Then run the DSP cost probes on it (does it raise the
-    limit?).
+    50 patches first. It includes the raised DSP limit (Luca, 2026-10-23),
+    so the DSP cost probes can measure it there.
 
 ## Later
 
@@ -48,17 +51,17 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
 - **Regenerate the handler blobs** from the user's own stock effects (a
   script), until the clean-room handlers replace them.
 
-- **Install from the browser (REA research).** Work out how Zoom Effect
-  Manager sends a ZDL to the pedal, so the Patch Editor and the NAM/cab
-  loaders can install effects over Web MIDI without Effect Manager (and the
-  Modwerk proposal gets an install path). Tool: [REA](https://github.com/morluto/rea)
-  (MIT, from Janik), set up 2026-10-20 as the `rea` MCP server in Claude Code
-  (runs under Node 24 via npx; REA does not support Node 25). Needs a native
-  provider first: Hopper, Ghidra or IDA (none installed). Rules:
-  interoperability only, never ship Zoom code; start read-only (list
-  installed effects), and write nothing to the pedal until the protocol is
-  understood and checked against a backup. REA does not cover TI C6000, so
-  effect and firmware code stay with dis6x, our disassembler and Ziddle.
+- **Install from the browser.** How Effect Manager installs is known now
+  (docs/EFFECT-INSTALL-PROTOCOL.md, from two MIDI captures, 2026-10-23): a
+  reflash of the whole effect file system in update mode. `tools/zoom_fs.py`
+  rebuilds its images byte for byte offline. The plan (with Janik, for
+  Modwerk): the user opens their own Zoom updater(s) in the browser, which
+  supply the stock effects. Next: generate `FLST_SEQ.ZDT` (needs Effect
+  Manager's master order, from its library), a browser port of the strip
+  step checked against `strip6x`, the read-only "what is installed" check in
+  the Patch Editor, then a first write on the owner's pedal with the stock
+  updater ready. Later: a Modwerk base firmware that flashes without the
+  updater (Janik's idea, not a priority).
 
 - **Emulator: NAM split** still differs from the host (amp side near
   silent) while playing correctly on the pedal: one more Ziddle gap, not yet
@@ -67,8 +70,9 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
   once released, measure the real limit on the MS-70CDR with the cost probes
   and update PE's meter (`DSP_BUDGET`, 228 now) and the README budget table.
 - **FXID collision:** Matujuice Sweep (496) has the same FXID as the stock
-  ANA234Cho (reported by `build/extract_effect_db.py`). His ID; tell him, and
-  check what the pedal does with both installed.
+  ANA234Cho (reported by `build/extract_effect_db.py`). Told Luca
+  (2026-10-23); he will fix the IDs when he redoes his effects in stereo.
+  Until then, check what the pedal does with both installed.
 - **Issue #6:** Patch Editor reads banks only up to E on a G1Xon (pedal has
   A-J).
 - **NAM Input default from capture metadata** (needs a level measurement, a
