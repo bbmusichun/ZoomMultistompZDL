@@ -51,17 +51,16 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
 - **Regenerate the handler blobs** from the user's own stock effects (a
   script), until the clean-room handlers replace them.
 
-- **Install from the browser.** How Effect Manager installs is known now
-  (docs/EFFECT-INSTALL-PROTOCOL.md, from two MIDI captures, 2026-10-23): a
-  reflash of the whole effect file system in update mode. `tools/zoom_fs.py`
-  rebuilds its images byte for byte offline. The plan (with Janik, for
-  Modwerk): the user opens their own Zoom updater(s) in the browser, which
-  supply the stock effects. Next: generate `FLST_SEQ.ZDT` (needs Effect
-  Manager's master order, from its library), a browser port of the strip
-  step checked against `strip6x`, the read-only "what is installed" check in
-  the Patch Editor, then a first write on the owner's pedal with the stock
-  updater ready. Later: a Modwerk base firmware that flashes without the
-  updater (Janik's idea, not a priority).
+- **Install from the browser.** Works per file over USB in normal mode on
+  the MS-70CDR 2.10 (2026-10-23, docs/EFFECT-INSTALL-PROTOCOL.md): back up
+  all files, replace an effect, add one (file plus its effect-list record),
+  remove one; each checked on the pedal after a power cycle. Next: an
+  install page in the Patch Editor (and for Modwerk) with the same guards as
+  `tools/file_probe.html`: our effects only, a backup first, effect-ID and
+  name checks against what is on the pedal, read back after every write,
+  the effect file before the list. Then MS-50G, MS-60B and G1on tests. The
+  full-reflash path (update mode, `tools/zoom_fs.py`) stays for recovery.
+  Later: a Modwerk base firmware (Janik's idea, not a priority).
 
 - **Emulator: NAM split** still differs from the host (amp side near
   silent) while playing correctly on the pedal: one more Ziddle gap, not yet
@@ -81,6 +80,10 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
   levels; follow the level instead).
 - **Maybe: a cloud reverb** (a big, diffuse ambient reverb, BigSky-style).
   Paused 2026-10-22; check the DSP budget first.
+- **Live-screen effects take their effect ID from the build.** Loop, Scope,
+  Spectrum, Ring and Skull find their slot by an `FXID` written in their C
+  source, so a renumbered copy shows only its cover. Pass it from the
+  manifest (`-DFXID=`) instead.
 - **Tuner knob reset check.** Stomphacks found that MS Plus pedals write a
   zero into one coefficient slot when the tuner closes (it reset their first
   knob). Check whether the ZDL pedals do anything similar to our first knob.

@@ -167,8 +167,25 @@ after a verified backup), with zoom-zt2's sequence:
 A 700-byte `TEST.TXT` (two blocks) was written, read back identical, listed
 (163 files), still there after a power cycle with the pedal booting and
 playing normally, then deleted (162 files again). So a per-effect install
-needs neither update mode nor a full reflash. Not yet tested: overwriting an
-effect, and adding one, which also means updating `FLST_SEQ.ZDT`.
+needs neither update mode nor a full reflash.
+
+Effects, same day, same pedal, all with `tools/file_probe.html`:
+
+- **Replace:** writing another build over an installed effect's file (same
+  name and effect ID; the effect list unchanged) works. Loop 0.03 -> 0.02 ->
+  0.03, each build running after a power cycle.
+- **Add:** write the new `.ZDL`, then `FLST_SEQ.ZDT` with one more 13-byte
+  record at the end of the effect's group (the file stays 4,108 bytes; the
+  zero padding at its end shrinks). After a power cycle the pedal listed the
+  test effect (a copy of Ring with its own effect ID) after Ring and loaded
+  it. Its live screen stayed on the cover, as expected: Ring's code looks for
+  its slot by the effect ID written in its C source, and the copy only had a
+  new ID in its header.
+- **Remove:** write `FLST_SEQ.ZDT` without the record, then delete the file.
+
+Write the effect file before the list, and the list back without the record
+before deleting the file, so the list never names a missing file. Read back
+every write. A record must not be added twice.
 
 ## Offline builder
 

@@ -62,6 +62,12 @@
       <input type="file" id="zdl" accept=".ZDL,.zdl">
       <button data-step="overwrite" disabled>8. Replace it on the pedal</button>
     </div>
+    <p>Add a new effect: the test effect RingT (a copy of Ring, effect ID 418) and its entry in the effect list, then remove both again. The effect list is read first and offered for saving.</p>
+    <div class="row">
+      <input type="file" id="ringt" accept=".ZDL,.zdl">
+      <button data-step="addeffect" disabled>9. Add RingT</button>
+      <button data-step="removeeffect" disabled>10. Remove RingT</button>
+    </div>
   </section>
 
   <section>
@@ -84,8 +90,12 @@ const zoom = body => [0xf0, 0x52, 0x00, devId, ...body, 0xf7];
 const TEST_FILE = 'TEST.TXT';
 // The only names a write may use: the test file, and our own effects (the ZDLs in dist/, fetched when connecting).
 let OUR_EFFECTS = new Set();
+// The add-effect test may also write the effect list, and only while it runs.
+const ADD_FILE = 'RINGT.ZDL', LIST_FILE = 'FLST_SEQ.ZDT';
+let listWritable = false;
 function writable(name) {
-  if (name === TEST_FILE || OUR_EFFECTS.has(name.toUpperCase())) return name;
+  if (name === TEST_FILE || name === ADD_FILE || OUR_EFFECTS.has(name.toUpperCase())) return name;
+  if (name === LIST_FILE && listWritable) return name;
   throw new Error('refusing to write ' + name + ': not the test file or one of our effects');
 }
 const nameBytes = name => [...Array.from(name, c => c.charCodeAt(0)), 0x00];
@@ -237,6 +247,38 @@ function zdlInfo(bytes) {
   if (bytes.length < 0x50 || String.fromCharCode(...bytes.slice(4, 8)) !== 'SIZE' || bytes[0x4c] !== 0x7f || String.fromCharCode(...bytes.slice(0x4d, 0x50)) !== 'ELF') return null;
   return { gid: bytes[0x3c], fxid: bytes[0x40] | bytes[0x41] << 8, version: String.fromCharCode(...bytes.slice(0x44, 0x48)) };
 }
+// FLST_SEQ.ZDT: sections '>>>' 00 <group> 8 x 00, 13-byte records (name padded with 00 to 12, then 00), '<<<' 00.
+function listSection(list, gid) {
+  for (let at = 0; at + 4 < list.length; at++) {
+    if (list[at] === 0x3e && list[at + 1] === 0x3e && list[at + 2] === 0x3e && list[at + 3] === 0 && list[at + 4] === gid) {
+      for (let end = at + 13; end + 3 < list.length; end += 13) if (list[end] === 0x3c && list[end + 1] === 0x3c && list[end + 2] === 0x3c && list[end + 3] === 0) return { start: at + 13, end };
+      return null;
+    }
+  }
+  return null;
+}
+const recordName = (list, at) => String.fromCharCode(...list.slice(at, at + 12)).replace(/\0+$/, '');
+function listWith(list, gid, name) {
+  const section = listSection(list, gid);
+  if (!section) return null;
+  for (let at = section.start; at < section.end; at += 13) if (recordName(list, at) === name) return null;
+  if (list.slice(-13).some(b => b)) return null;               // no spare room at the end
+  const record = [...Array.from(name, c => c.charCodeAt(0)), ...Array(13 - name.length).fill(0)];
+  return [...list.slice(0, section.end), ...record, ...list.slice(section.end, list.length - 13)];
+}
+function listWithout(list, gid, name) {
+  const section = listSection(list, gid);
+  if (!section) return null;
+  for (let at = section.start; at < section.end; at += 13) if (recordName(list, at) === name) return [...list.slice(0, at), ...list.slice(at + 13), ...Array(13).fill(0)];
+  return null;
+}
+const sameBytes = (a, b) => a && b && a.length === b.length && a.every((x, i) => x === b[i]);
+// Write a file and read it back; null when it checks out, else what went wrong.
+async function writeChecked(name, data) {
+  const problem = await writeFile(name, data);
+  if (problem) return problem;
+  return sameBytes(await readFile(name), data) ? null : name + ' read back different';
+}
 // A plain (stored, uncompressed) zip, so the backup opens anywhere.
 function zip(entries) {
   const parts = [], central = [], enc = new TextEncoder();
@@ -344,6 +386,55 @@ const STEPS = {
     result(same && listed && after.length === files.length
       ? 'Overwrite: ' + target.name + ' is now ' + info.version + ', read back identical. Power-cycle the pedal and try the effect.'
       : 'Overwrite: something did not check out. Copy the log and send it; don\'t power-cycle yet.', same && listed ? 'ok' : 'bad');
+  },
+  async addeffect() {
+    const picked = $('ringt').files[0];
+    if (!picked || picked.name.toUpperCase() !== ADD_FILE) return result('Add: choose RingT.ZDL (the test effect) first.', 'warn');
+    const data = Array.from(new Uint8Array(await picked.arrayBuffer())), info = zdlInfo(data);
+    if (!info || info.fxid !== 418) return result('Add: that is not the RingT test effect (effect ID 418).', 'bad');
+    const files = await listFiles();
+    if (files.some(f => f.name === ADD_FILE)) return result('Add: ' + ADD_FILE + ' is already on the pedal. Remove it first (10).', 'warn');
+    // Effect ID 418 was checked against a full backup of the pedal when RingT was built.
+    const list = await readFile(LIST_FILE);
+    if (!list || list.length !== 4108) return result('Add: could not read the effect list back; not writing.', 'bad');
+    const updated = listWith(list, info.gid, ADD_FILE);
+    if (!updated) return result('Add: could not place ' + ADD_FILE + ' in group ' + info.gid + ' of the effect list; not writing.', 'bad');
+    offer(new Blob([new Uint8Array(list)]), 'pedal-' + LIST_FILE);
+    if (!confirm('Add ' + ADD_FILE + ' (' + data.length + ' bytes) and its entry in the effect list? The current effect list is offered for saving: save it first. Do not touch the pedal or the cable.')) return result('Add: cancelled.', '');
+    log('add: writing ' + ADD_FILE + ', then the effect list (messages not logged)');
+    quiet = true; listWritable = true;
+    let problem;
+    try {
+      problem = await writeChecked(ADD_FILE, data);
+      if (!problem) {
+        problem = await writeChecked(LIST_FILE, updated);
+        if (problem) { log('add: effect list write failed (' + problem + '); writing the original back'); const back = await writeChecked(LIST_FILE, list); if (back) problem += '; RESTORING THE LIST ALSO FAILED: ' + back }
+      }
+    } finally { quiet = false; listWritable = false }
+    if (problem) return result('Add: ' + problem + '. Copy the log and send it; don\'t power-cycle yet.', 'bad');
+    const after = await listFiles();
+    log('add: ' + ADD_FILE + ' and the effect list written and read back identical; ' + after.length + ' files');
+    result('Add: ' + ADD_FILE + ' written, effect list updated, both read back identical (' + after.length + ' files). Power-cycle, then look for RingT in the effect list (next to Ring).', after.length === files.length + 1 ? 'ok' : 'warn');
+  },
+  async removeeffect() {
+    const files = await listFiles();
+    const list = await readFile(LIST_FILE);
+    if (!list || list.length !== 4108) return result('Remove: could not read the effect list back; not writing.', 'bad');
+    const updated = listWithout(list, 8, ADD_FILE);
+    const present = files.some(f => f.name === ADD_FILE);
+    if (!updated && !present) return result('Remove: ' + ADD_FILE + ' is neither on the pedal nor in the effect list.', 'warn');
+    if (!confirm('Remove ' + ADD_FILE + ' from the effect list and delete the file?')) return result('Remove: cancelled.', '');
+    quiet = true; listWritable = true;
+    let problem = null;
+    try {
+      if (updated) problem = await writeChecked(LIST_FILE, updated);
+      if (!problem && present) { await ask('check', 1500, ADD_FILE); await ask('readStep'); await ask('checkEnd'); await ask('remove', 1500, ADD_FILE); await ask('closeA'); await ask('closeB') }
+    } finally { quiet = false; listWritable = false }
+    if (problem) return result('Remove: ' + problem + '. Copy the log and send it.', 'bad');
+    const after = await listFiles();
+    const gone = !after.some(f => f.name === ADD_FILE);
+    log('remove: effect list ' + (updated ? 'updated' : 'already without it') + '; ' + ADD_FILE + (gone ? ' deleted' : ' STILL LISTED') + '; ' + after.length + ' files');
+    result(gone ? 'Remove: done, ' + after.length + ' files. Power-cycle and check RingT is gone.' : 'Remove: the file is still listed. Copy the log and send it.', gone ? 'ok' : 'bad');
   },
   async deletetest() {
     const before = await listFiles();
