@@ -57,6 +57,11 @@
       <button data-step="writetest" disabled>6. Write TEST.TXT and read it back</button>
       <button data-step="deletetest" disabled>7. Delete TEST.TXT</button>
     </div>
+    <p>Replace one of our own effects that is already on the pedal with another build of it (same name and effect ID). Stock effects and new files are refused. The pedal's current copy is read first and offered for saving.</p>
+    <div class="row">
+      <input type="file" id="zdl" accept=".ZDL,.zdl">
+      <button data-step="overwrite" disabled>8. Replace it on the pedal</button>
+    </div>
   </section>
 
   <section>
@@ -77,6 +82,12 @@ function result(text, cls = '') { $('result').className = 'status ' + cls; $('re
 
 const zoom = body => [0xf0, 0x52, 0x00, devId, ...body, 0xf7];
 const TEST_FILE = 'TEST.TXT';
+// The only names a write may use: the test file, and our own effects (the ZDLs in dist/, fetched when connecting).
+let OUR_EFFECTS = new Set();
+function writable(name) {
+  if (name === TEST_FILE || OUR_EFFECTS.has(name.toUpperCase())) return name;
+  throw new Error('refusing to write ' + name + ': not the test file or one of our effects');
+}
 const nameBytes = name => [...Array.from(name, c => c.charCodeAt(0)), 0x00];
 const MESSAGES = {
   identity: () => [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7],
@@ -89,11 +100,11 @@ const MESSAGES = {
   openRead: name => zoom([0x60, 0x20, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...nameBytes(name)]),
   readStep: () => zoom([0x60, 0x05, 0x00]),
   readChunk: () => zoom([0x60, 0x22, 0x14, 0x2f, 0x60, 0x00, 0x0c, 0x00, 0x04, 0x00, 0x00, 0x00]),
-  // Writes, in zoom-zt2's order (file_check, file_upload / file_delete, file_close). Only TEST_FILE can be named.
-  check: () => zoom([0x60, 0x25, 0x00, 0x00, ...nameBytes(TEST_FILE)]),
+  // Writes, in zoom-zt2's order (file_check, file_upload / file_delete, file_close). writable() decides which names may be written.
+  check: name => zoom([0x60, 0x25, 0x00, 0x00, ...nameBytes(writable(name))]),
   checkEnd: () => zoom([0x60, 0x27]),
-  remove: () => zoom([0x60, 0x24, ...nameBytes(TEST_FILE)]),
-  openWrite: () => zoom([0x60, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...nameBytes(TEST_FILE)]),
+  remove: name => zoom([0x60, 0x24, ...nameBytes(writable(name))]),
+  openWrite: name => zoom([0x60, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...nameBytes(writable(name))]),
   writeBlock: data => {
     const crc = (crc32(data) ^ 0xffffffff) >>> 0;
     return zoom([0x60, 0x23, 0x40, 0x00, 0x00, 0x00, 0x00, data.length & 0x7f, (data.length >> 7) & 0x7f, 0x00, 0x00, 0x00,
@@ -136,6 +147,11 @@ $('connect').onclick = async () => {
     const names = { 0x61: 'MS-70CDR', 0x58: 'MS-50G', 0x5f: 'MS-60B' };
     $('conn').textContent = 'Connected: ' + (names[devId] ?? 'unknown model') + ' (device id 0x' + devId.toString(16) + ')';
     $('conn').className = 'status ok';
+    try {
+      const index = await (await fetch('../dist/')).text();
+      OUR_EFFECTS = new Set([...index.matchAll(/href="([^"]+\.ZDL)"/gi)].map(m => decodeURIComponent(m[1]).toUpperCase()));
+      log('our effects (dist/): ' + OUR_EFFECTS.size);
+    } catch { log('could not list dist/; replacing effects is disabled') }
     document.querySelectorAll('[data-step]').forEach(button => button.disabled = false);
   } catch (error) { $('conn').textContent = 'MIDI access failed: ' + error.message; $('conn').className = 'status bad' }
 };
@@ -205,6 +221,21 @@ async function readFile(name) {
   }
   await ask('closeA'); await ask('closeB');
   return ok ? file : null;
+}
+// Write one file, zoom-zt2's way. Returns null, or what went wrong.
+async function writeFile(name, data) {
+  const steps = [['check', name], ['readStep'], ['checkEnd'], ['remove', name], ['openWrite', name], ['readStep']];
+  for (const [step, arg] of steps) if (!await ask(step, 1500, arg)) { await ask('closeA'); await ask('closeB'); return 'no reply to ' + step + '; stopped before writing data. See the log.' }
+  for (let at = 0; at < data.length; at += 512) {
+    if (!await ask('writeBlock', 3000, data.slice(at, at + 512)) || !await ask('readStep')) { await ask('closeA'); await ask('closeB'); return 'no reply while writing block ' + (at / 512 + 1) + '. See the log, then check the file list.' }
+  }
+  await ask('closeA'); await ask('closeB');
+  return null;
+}
+// What a ZDL says it is: group, effect id and version from its header.
+function zdlInfo(bytes) {
+  if (bytes.length < 0x50 || String.fromCharCode(...bytes.slice(4, 8)) !== 'SIZE' || bytes[0x4c] !== 0x7f || String.fromCharCode(...bytes.slice(0x4d, 0x50)) !== 'ELF') return null;
+  return { gid: bytes[0x3c], fxid: bytes[0x40] | bytes[0x41] << 8, version: String.fromCharCode(...bytes.slice(0x44, 0x48)) };
 }
 // A plain (stored, uncompressed) zip, so the backup opens anywhere.
 function zip(entries) {
@@ -276,12 +307,8 @@ const STEPS = {
     const data = Array.from(enc.encode(text.repeat(Math.ceil(700 / text.length)))).slice(0, 700);   // two blocks: 512 + 188
     if (!confirm('Write ' + TEST_FILE + ' (' + data.length + ' bytes) to the pedal? A verified backup should exist. Do not touch the pedal or the cable.')) return result('Write test: cancelled.', '');
     log('write test: ' + before.length + ' files before; writing ' + TEST_FILE + ', ' + data.length + ' bytes');
-    const steps = [['check'], ['readStep'], ['checkEnd'], ['remove'], ['openWrite'], ['readStep']];
-    for (const [name] of steps) if (!await ask(name)) { await ask('closeA'); await ask('closeB'); return result('Write test: no reply to ' + name + '; stopped before writing data. See the log.', 'bad') }
-    for (let at = 0; at < data.length; at += 512) {
-      if (!await ask('writeBlock', 3000, data.slice(at, at + 512)) || !await ask('readStep')) { await ask('closeA'); await ask('closeB'); return result('Write test: no reply while writing block ' + (at / 512 + 1) + '. See the log, then check the file list.', 'bad') }
-    }
-    await ask('closeA'); await ask('closeB');
+    const problem = await writeFile(TEST_FILE, data);
+    if (problem) return result('Write test: ' + problem, 'bad');
     const back = await readFile(TEST_FILE), after = await listFiles();
     const same = back && back.length === data.length && back.every((b, i) => b === data[i]);
     const listed = after.find(f => f.name === TEST_FILE);
@@ -290,12 +317,40 @@ const STEPS = {
       ? 'Write test: ' + TEST_FILE + ' written, read back identical, listed (' + after.length + ' files). Now power-cycle the pedal and check it plays, then delete it (7).'
       : 'Write test: something did not check out. Copy the log and send it; don\'t power-cycle yet.', same && listed ? 'ok' : 'bad');
   },
+  async overwrite() {
+    const picked = $('zdl').files[0];
+    if (!picked) return result('Overwrite: choose one of our .ZDL files first.', 'warn');
+    const data = Array.from(new Uint8Array(await picked.arrayBuffer())), info = zdlInfo(data);
+    if (!info) return result('Overwrite: ' + picked.name + ' is not a ZDL.', 'bad');
+    if (!OUR_EFFECTS.has(picked.name.toUpperCase())) return result('Overwrite: ' + picked.name + ' is not one of our effects (dist/); only those can be written.', 'bad');
+    const files = await listFiles(), target = files.find(f => f.name.toUpperCase() === picked.name.toUpperCase());
+    if (!target) return result('Overwrite: ' + picked.name + ' is not on the pedal. This step only replaces an installed effect; it never adds one.', 'warn');
+    const current = await readFile(target.name);
+    if (!current || current.length !== target.size) return result('Overwrite: could not read the pedal\'s ' + target.name + ' back; not writing.', 'bad');
+    const was = zdlInfo(current);
+    if (!was || was.gid !== info.gid || was.fxid !== info.fxid) return result('Overwrite: the pedal\'s ' + target.name + ' is a different effect (id ' + (was ? was.gid + '/' + was.fxid : '?') + ', picked ' + info.gid + '/' + info.fxid + '); not writing.', 'bad');
+    offer(new Blob([new Uint8Array(current)]), 'pedal-' + target.name);
+    if (current.length === data.length && current.every((b, i) => b === data[i])) return result('Overwrite: the pedal already has this exact ' + target.name + ' (' + was.version + '); nothing written. Its copy is offered for saving above.', 'ok');
+    if (!confirm('Replace ' + target.name + ' ' + was.version + ' (' + current.length + ' bytes) on the pedal with ' + info.version + ' (' + data.length + ' bytes)? Save the offered copy of the current one first. Do not touch the pedal or the cable.')) return result('Overwrite: cancelled. The current copy is offered for saving.', '');
+    log('overwrite: ' + target.name + ' ' + was.version + ' -> ' + info.version + ', ' + data.length + ' bytes (messages not logged)');
+    quiet = true;
+    let problem;
+    try { problem = await writeFile(target.name, data) } finally { quiet = false }
+    if (problem) return result('Overwrite: ' + problem, 'bad');
+    const back = await readFile(target.name), after = await listFiles();
+    const same = back && back.length === data.length && back.every((b, i) => b === data[i]);
+    const listed = after.find(f => f.name === target.name);
+    log('overwrite: read back ' + (back ? back.length : 'nothing') + ' bytes, ' + (same ? 'identical' : 'DIFFERENT') + '; ' + after.length + ' files, ' + target.name + (listed ? ' listed with ' + listed.size + ' bytes' : ' NOT LISTED'));
+    result(same && listed && after.length === files.length
+      ? 'Overwrite: ' + target.name + ' is now ' + info.version + ', read back identical. Power-cycle the pedal and try the effect.'
+      : 'Overwrite: something did not check out. Copy the log and send it; don\'t power-cycle yet.', same && listed ? 'ok' : 'bad');
+  },
   async deletetest() {
     const before = await listFiles();
     if (!before.some(f => f.name === TEST_FILE)) return result('Delete: ' + TEST_FILE + ' is not on the pedal.', 'warn');
     if (!confirm('Delete ' + TEST_FILE + ' from the pedal?')) return result('Delete: cancelled.', '');
-    await ask('check'); await ask('readStep'); await ask('checkEnd');
-    const reply = await ask('remove');
+    await ask('check', 1500, TEST_FILE); await ask('readStep'); await ask('checkEnd');
+    const reply = await ask('remove', 1500, TEST_FILE);
     await ask('closeA'); await ask('closeB');
     const after = await listFiles();
     const gone = !after.some(f => f.name === TEST_FILE);

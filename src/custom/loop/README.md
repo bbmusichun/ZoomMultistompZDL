@@ -4,7 +4,8 @@
 overdub, undo and redo, all from the footswitch. It runs on the stock
 firmware, with no MIDISTOMP needed. Its screen (state, time and waveform) needs
 MS-70CDR 2.10. Tested on the pedal on 2026-10-19 (v0.01) and 2026-10-20
-(v0.02, with tempo quantize and the click).
+(v0.02, tempo quantize and the click) and 2026-10-23
+(v0.03, the CLEAR tag).
 
 Put Loop last in the patch, so it records everything before it.
 
@@ -82,6 +83,9 @@ knob.
   - **UNDO:** there is an overdub you can undo.
   - **LONG:** the extra memory is in use.
   - **NO LONG:** you turned Long on, but it isn't available (see below).
+  - **CLEAR:** you turned Long on while a loop was recorded. Long is
+    available, but switches over only once the looper is empty: stop, then
+    double-press to clear.
 
 ## Length and sound
 

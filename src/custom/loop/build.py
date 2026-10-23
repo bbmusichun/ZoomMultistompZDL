@@ -14,7 +14,7 @@ from zvis_build import Canvas, raw, c_bytes, dials, encode_zoom_rle, build  # no
 WORDS = ["READY", "REC", "PLAY", "DUB", "STOP"]       # loop.c's enum order
 GLYPHS = "0123456789.S"
 GW = 7                                                  # scale-2 glyph advance
-TAGS = [("UNDO", 0), ("LONG", 6), ("NO LONG", 6)]     # (text, row)
+TAGS = [("UNDO", 0), ("LONG", 6), ("NO LONG", 6), ("CLEAR", 6)]     # (text, row)
 TAG_X = 46
 
 

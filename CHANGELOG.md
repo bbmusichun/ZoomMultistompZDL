@@ -7,6 +7,14 @@ dated. Effects in [dist/](dist/) carry their own version in the file
 ## Unreleased
 
 ### In dist/
+- **Loop 0.03**: with Long turned on while a loop is recorded, the screen
+  now says **CLEAR** (Long is available once the looper is cleared) instead
+  of NO LONG, which now only means Long can't be used here (other firmware,
+  or MIDISTOMP installed). Tested on the MS-70CDR 2.10 (2026-10-23).
+- **Installing over USB without Effect Manager** works on the MS-70CDR 2.10
+  (first tests, 2026-10-23): `tools/file_probe.html` backs up every file
+  from the pedal, and replaced Loop 0.03 with 0.02 and back, each loaded
+  after a power cycle. See docs/EFFECT-INSTALL-PROTOCOL.md.
 - **Loop, Skull, Scope, Spectrum and Ring** now ship in `dist/`, tested on
   the MS-70CDR 2.10 (2026-10-20): Loop 0.02, Skull 0.05, Scope 0.03,
   Spectrum 0.02, Ring 0.02. Their screens need firmware 2.10; elsewhere they

@@ -1,4 +1,4 @@
-/* Loop v0.02: a looper for stock firmware (screen: MS-70CDR 2.10).
+/* Loop v0.03: a looper for stock firmware (screen: MS-70CDR 2.10).
  *
  * The footswitch is the looper's button. Pressing it flips the effect on/off
  * (params[0]); every flip is a press, and the loop plays whether the effect
@@ -512,7 +512,10 @@ void Fx_DLY_Loop(uintptr_t *ctx)
         }
         if (st->undo_ok) put2(&st->z, LOOP_TAGS + LOOP_TAG_AT[0], (int)LOOP_TAG_W[0], LOOP_TAG_X);
         if (st->longm) put2(&st->z, LOOP_TAGS + LOOP_TAG_AT[1], (int)LOOP_TAG_W[1], LOOP_TAG_X);
-        else if (st->klong == 1u) put2(&st->z, LOOP_TAGS + LOOP_TAG_AT[2], (int)LOOP_TAG_W[2], LOOP_TAG_X);
+        else if (st->klong == 1u) {            /* NO LONG: unavailable; CLEAR: available once the looper is empty */
+            unsigned t = st->longok ? 3u : 2u;
+            put2(&st->z, LOOP_TAGS + LOOP_TAG_AT[t], (int)LOOP_TAG_W[t], LOOP_TAG_X);
+        }
         st->step = 2;
         return;
     }
