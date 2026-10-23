@@ -154,10 +154,21 @@ the file Effect Manager wrote in the second capture. So a complete backup of
 the pedal's files over USB is possible, and stock effects can come from the
 pedal itself instead of the updaters.
 
-zoom-zt2 also writes (`60 24` delete, `60 20 01` open for writing, `60 23`
-blocks) and deletes single files on the ZD2 pedals. On this pedal that is
-untested. If it works, a per-effect install needs neither update mode nor a
-full reflash.
+Writing and deleting single files works too (owner's pedal, 23 October 2026,
+after a verified backup), with zoom-zt2's sequence:
+
+| Step | Messages |
+| --- | --- |
+| Check | `60 25 00 00` + name + `00`, `60 05 00`, `60 27` |
+| Write | `60 24` + name + `00` (delete), `60 20 01` + 9 × `00` + name + `00`, `60 05 00`; per block of up to 512 bytes `60 23 40 00 00 00 00`, length (2), `00 00 00`, packed data, CRC32 (5), then `60 05 00` |
+| Delete | check, then `60 24` + name + `00` |
+| Close | `60 21 40 00 00 00 00`, `60 09` |
+
+A 700-byte `TEST.TXT` (two blocks) was written, read back identical, listed
+(163 files), still there after a power cycle with the pedal booting and
+playing normally, then deleted (162 files again). So a per-effect install
+needs neither update mode nor a full reflash. Not yet tested: overwriting an
+effect, and adding one, which also means updating `FLST_SEQ.ZDT`.
 
 ## Offline builder
 
@@ -182,4 +193,4 @@ Zoom's updater. Before any write:
 With the file commands (section 5) the order is: a full backup of the pedal's
 files, verified by rebuilding Effect Manager's image from it; a write test on
 a harmless new file (not an effect, not in the effect list), read back and
-deleted; then one of our own effects.
+deleted (done, it works); then one of our own effects.

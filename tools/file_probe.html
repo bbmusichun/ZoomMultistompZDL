@@ -11,6 +11,7 @@
   main { max-width:860px; margin:0 auto; padding:24px 16px 48px; display:grid; gap:16px; }
   h1 { font-size:22px; margin:0; }
   p { margin:0; color:var(--dim); max-width:65ch; }
+  section.danger { border-color:var(--bad); }
   section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; display:grid; gap:10px; }
   .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
   button { font:inherit; padding:7px 12px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--text); cursor:pointer; }
@@ -25,7 +26,7 @@
 <body>
 <main>
   <h1>File Probe <span class="status" style="color:var(--dim)">read-only</span></h1>
-  <p>Asks the pedal whether it answers Zoom's file commands as the ZD2 pedals do (from zoom-zt2). This page only sends the commands listed below: identity, editor mode, disk usage, list files, read one file, close. It never writes or deletes a file. Close Zoom Effect Manager first (it holds the MIDI port), and use Chrome or Edge.</p>
+  <p>Asks the pedal whether it answers Zoom's file commands as the ZD2 pedals do (from zoom-zt2). This page only sends the commands listed below: identity, editor mode, disk usage, list files, read files (one, or all of them as a backup zip), close. It never writes or deletes a file. Close Zoom Effect Manager first (it holds the MIDI port), and use Chrome or Edge.</p>
 
   <section>
     <div class="row"><button id="connect">Connect</button><span id="conn" class="status">Not connected</span></div>
@@ -37,7 +38,8 @@
       <button data-step="usage" disabled>2. Disk usage</button>
       <button data-step="list" disabled>3. List files</button>
       <button data-step="read" disabled>4. Read FLST_SEQ.ZDT</button>
-      <a id="save" hidden>Save the file</a>
+      <button data-step="backup" disabled>5. Back up all files</button>
+      <a id="save" hidden>Save</a>
     </div>
     <div class="row">
       <button data-step="pcmode" disabled>Optional: PC mode on</button>
@@ -46,6 +48,15 @@
     </div>
     <div id="result" class="status"></div>
     <ul id="files" class="files"></ul>
+  </section>
+
+  <section class="danger">
+    <div class="row"><strong>Write test</strong><span class="status bad">writes to the pedal</span></div>
+    <p>Only after a verified backup. Writes one small new file, <code>TEST.TXT</code> (not an effect, not in the effect list), reads it back and compares it; the second button deletes it again. These buttons can write no other file. Don't touch the pedal or the cable while it runs. Recovery if anything goes wrong: Zoom Effect Manager, or the backup image in update mode.</p>
+    <div class="row">
+      <button data-step="writetest" disabled>6. Write TEST.TXT and read it back</button>
+      <button data-step="deletetest" disabled>7. Delete TEST.TXT</button>
+    </div>
   </section>
 
   <section>
@@ -57,7 +68,7 @@
 "use strict";
 // Commands from mungewell/zoom-zt2 (MIT), zoomzt2.py, with the device id the pedal reports instead of the G1Four's 0x6e.
 // Every message this page can send is built here and nowhere else.
-let devId = null, midiIn = null, midiOut = null, waiter = null;
+let devId = null, midiIn = null, midiOut = null, waiter = null, quiet = false;
 const lines = [];
 const $ = id => document.getElementById(id);
 const hex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(' ');
@@ -65,6 +76,7 @@ function log(text) { lines.push(new Date().toISOString().slice(11, 23) + '  ' + 
 function result(text, cls = '') { $('result').className = 'status ' + cls; $('result').textContent = text }
 
 const zoom = body => [0xf0, 0x52, 0x00, devId, ...body, 0xf7];
+const TEST_FILE = 'TEST.TXT';
 const nameBytes = name => [...Array.from(name, c => c.charCodeAt(0)), 0x00];
 const MESSAGES = {
   identity: () => [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7],
@@ -77,6 +89,16 @@ const MESSAGES = {
   openRead: name => zoom([0x60, 0x20, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...nameBytes(name)]),
   readStep: () => zoom([0x60, 0x05, 0x00]),
   readChunk: () => zoom([0x60, 0x22, 0x14, 0x2f, 0x60, 0x00, 0x0c, 0x00, 0x04, 0x00, 0x00, 0x00]),
+  // Writes, in zoom-zt2's order (file_check, file_upload / file_delete, file_close). Only TEST_FILE can be named.
+  check: () => zoom([0x60, 0x25, 0x00, 0x00, ...nameBytes(TEST_FILE)]),
+  checkEnd: () => zoom([0x60, 0x27]),
+  remove: () => zoom([0x60, 0x24, ...nameBytes(TEST_FILE)]),
+  openWrite: () => zoom([0x60, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...nameBytes(TEST_FILE)]),
+  writeBlock: data => {
+    const crc = (crc32(data) ^ 0xffffffff) >>> 0;
+    return zoom([0x60, 0x23, 0x40, 0x00, 0x00, 0x00, 0x00, data.length & 0x7f, (data.length >> 7) & 0x7f, 0x00, 0x00, 0x00,
+      ...pack7(data), crc & 0x7f, (crc >>> 7) & 0x7f, (crc >>> 14) & 0x7f, (crc >>> 21) & 0x7f, (crc >>> 28) & 0x0f]);
+  },
   closeA: () => zoom([0x60, 0x21, 0x40, 0x00, 0x00, 0x00, 0x00]),
   closeB: () => zoom([0x60, 0x09]),
 };
@@ -85,9 +107,9 @@ const MESSAGES = {
 function ask(name, timeout = 1500, arg) {
   const bytes = MESSAGES[name](arg);
   return new Promise(resolve => {
-    const timer = setTimeout(() => { waiter = null; log('    no reply (' + timeout + ' ms)'); resolve(null) }, timeout);
+    const timer = setTimeout(() => { waiter = null; log('    no reply to ' + name + ' (' + timeout + ' ms)'); resolve(null) }, timeout);
     waiter = data => { clearTimeout(timer); waiter = null; resolve(data) };
-    log('OUT ' + name.padEnd(10) + (bytes.length > 48 ? hex(bytes.slice(0, 48)) + ' …(' + bytes.length + ' bytes)' : hex(bytes)));
+    if (!quiet) log('OUT ' + name.padEnd(10) + (bytes.length > 48 ? hex(bytes.slice(0, 48)) + ' …(' + bytes.length + ' bytes)' : hex(bytes)));
     midiOut.send(bytes);
   });
 }
@@ -95,7 +117,7 @@ function ask(name, timeout = 1500, arg) {
 function onMessage(event) {
   const data = event.data;
   if (data[0] !== 0xf0) return;
-  log('IN             ' + (data.length > 48 ? hex(data.slice(0, 48)) + ' …(' + data.length + ' bytes)' : hex(data)));
+  if (!quiet) log('IN             ' + (data.length > 48 ? hex(data.slice(0, 48)) + ' …(' + data.length + ' bytes)' : hex(data)));
   if (waiter) waiter(data);
 }
 
@@ -124,6 +146,16 @@ function unpack7(bytes) {
   for (let i = 0; i < bytes.length; i += 8) for (let j = 1; j < 8 && i + j < bytes.length; j++) out.push(bytes[i + j] | (bytes[i] & (1 << (7 - j)) ? 0x80 : 0));
   return out;
 }
+function pack7(bytes) {
+  const out = [];
+  for (let i = 0; i < bytes.length; i += 7) {
+    const group = bytes.slice(i, i + 7);
+    let high = 0;
+    group.forEach((b, j) => { if (b & 0x80) high |= 1 << (6 - j) });
+    out.push(high, ...group.map(b => b & 0x7f));
+  }
+  return out;
+}
 function crc32(bytes) {
   let c = 0xffffffff;
   for (const b of bytes) { c ^= b; for (let k = 0; k < 8; k++) c = c & 1 ? (c >>> 1) ^ 0xedb88320 : c >>> 1 }
@@ -143,23 +175,132 @@ function chunkOf(reply) {
   return { data, ok: ((crc ^ 0xffffffff) >>> 0) === crc32(data) };
 }
 
+// Every file on the pedal, in directory order, with the size the listing reports.
+async function listFiles() {
+  const files = [];
+  let reply = await ask('findFirst');
+  for (let guard = 0; reply && guard < 600; guard++) {
+    const d = Array.from(reply).slice(1);
+    if (d[3] !== 0x60 || d[4] !== 0x04) break;
+    // An 8.3 name has at most 12 characters; a 12-character name has no 00 after it, and the next byte can be anything.
+    const end = d.indexOf(0, 14), name = String.fromCharCode(...d.slice(14, end > 14 && end < 26 ? end : 26));
+    if (!name) break;
+    files.push({ name, size: d[29] + d[30] * 128 + d[31] * 16384 + d[32] * 2097152 + d[33] * 268435456 });
+    reply = await ask('findNext');
+  }
+  await ask('closeA'); await ask('closeB');
+  return files;
+}
+// One file, every block CRC-checked; null if anything does not check out.
+async function readFile(name) {
+  const file = [];
+  let ok = true;
+  await ask('openRead', 1500, name);
+  for (let guard = 0; guard < 256; guard++) {
+    await ask('readStep'); await ask('readChunk');
+    const chunk = chunkOf(await ask('readStep'));
+    if (chunk.end) break;
+    if (!chunk.ok) { ok = false; break }
+    file.push(...chunk.data);
+  }
+  await ask('closeA'); await ask('closeB');
+  return ok ? file : null;
+}
+// A plain (stored, uncompressed) zip, so the backup opens anywhere.
+function zip(entries) {
+  const parts = [], central = [], enc = new TextEncoder();
+  let offset = 0;
+  const u16 = v => [v & 255, v >> 8 & 255], u32 = v => [v & 255, v >> 8 & 255, v >> 16 & 255, v >>> 24 & 255];
+  for (const { name, data } of entries) {
+    const n = Array.from(enc.encode(name)), c = crc32(data), common = [...u16(20), ...u16(0), ...u16(0), ...u16(0), ...u16(0x21), ...u32(c), ...u32(data.length), ...u32(data.length), ...u16(n.length), ...u16(0)];
+    const local = [0x50, 0x4b, 3, 4, ...common, ...n];
+    parts.push(new Uint8Array(local), new Uint8Array(data));
+    central.push(...[0x50, 0x4b, 1, 2, ...u16(20), ...common, ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(offset), ...n]);
+    offset += local.length + data.length;
+  }
+  parts.push(new Uint8Array(central), new Uint8Array([0x50, 0x4b, 5, 6, 0, 0, 0, 0, ...u16(entries.length), ...u16(entries.length), ...u32(central.length), ...u32(offset), 0, 0]));
+  return new Blob(parts, { type: 'application/zip' });
+}
+function offer(blob, name) {
+  Object.assign($('save'), { href: URL.createObjectURL(blob), download: name, hidden: false, textContent: 'Save ' + name });
+}
+
 const STEPS = {
   async read() {
-    const name = 'FLST_SEQ.ZDT', file = [];
+    const name = 'FLST_SEQ.ZDT';
     $('save').hidden = true;
-    await ask('openRead', 1500, name);
-    for (let guard = 0; guard < 64; guard++) {
-      await ask('readStep'); await ask('readChunk');
-      const chunk = chunkOf(await ask('readStep'));
-      if (chunk.end) break;
-      if (!chunk.ok) { result('Read ' + name + ': a block failed its checksum. See the log.', 'bad'); break }
-      file.push(...chunk.data);
+    const file = await readFile(name);
+    if (!file) return result('Read ' + name + ': a block failed its checksum. See the log.', 'bad');
+    if (!file.length) return result('Read ' + name + ': no data came back. See the log.', 'warn');
+    offer(new Blob([new Uint8Array(file)]), name);
+    result('Read ' + name + ': ' + file.length + ' bytes (CRC checked). Save it and send it over.', 'ok');
+  },
+  async list() {
+    $('files').textContent = '';
+    const files = await listFiles();
+    for (const f of files) { const item = document.createElement('li'); item.textContent = f.name + '  ' + f.size; $('files').append(item) }
+    result(files.length ? 'Files listed: ' + files.length + '.' : 'List files: no names came back. See the log.', files.length ? 'ok' : 'warn');
+  },
+  async backup() {
+    $('save').hidden = true;
+    const started = performance.now(), files = await listFiles();
+    if (!files.length) return result('Backup: the pedal listed no files. See the log.', 'bad');
+    log('backup: ' + files.length + ' files listed; reading them (messages not logged)');
+    const entries = [], problems = [];
+    quiet = true;
+    try {
+      for (const [index, f] of files.entries()) {
+        result('Backup: reading ' + (index + 1) + ' of ' + files.length + ': ' + f.name, '');
+        const data = await readFile(f.name);
+        if (!data) problems.push(f.name + ': checksum failed');
+        else if (data.length !== f.size) problems.push(f.name + ': read ' + data.length + ' bytes, listed ' + f.size);
+        else entries.push({ name: 'files/' + f.name, data });
+      }
+    } finally { quiet = false }
+    const seconds = ((performance.now() - started) / 1000).toFixed(1);
+    if (problems.length) { log('backup problems:\n  ' + problems.join('\n  ')); return result('Backup incomplete: ' + problems.length + ' of ' + files.length + ' files did not check out. See the log; nothing was saved.', 'bad') }
+    const enc = new TextEncoder();
+    entries.push({ name: 'order.txt', data: Array.from(enc.encode(files.map(f => f.name).join('\n') + '\n')) });
+    entries.push({ name: 'listing.txt', data: Array.from(enc.encode(files.map(f => f.name + ' ' + f.size).join('\n') + '\n')) });
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    offer(zip(entries), 'pedal-backup-' + stamp + '.zip');
+    const total = files.reduce((n, f) => n + f.size, 0);
+    log('backup: ' + files.length + ' files, ' + total + ' bytes, ' + seconds + ' s, every block CRC-checked and every size matched');
+    result('Backup: ' + files.length + ' files, ' + total.toLocaleString() + ' bytes in ' + seconds + ' s, all checked. Save the zip.', 'ok');
+  },
+  async writetest() {
+    const before = await listFiles();
+    if (!before.length) return result('Write test: the pedal listed no files; not writing.', 'bad');
+    if (before.some(f => f.name === TEST_FILE)) return result('Write test: ' + TEST_FILE + ' is already on the pedal. Delete it first (7).', 'warn');
+    const enc = new TextEncoder(), text = 'Write test from ZoomMultistompZDL tools/file_probe.html, ' + new Date().toISOString() + '. Not an effect; safe to delete.\n';
+    const data = Array.from(enc.encode(text.repeat(Math.ceil(700 / text.length)))).slice(0, 700);   // two blocks: 512 + 188
+    if (!confirm('Write ' + TEST_FILE + ' (' + data.length + ' bytes) to the pedal? A verified backup should exist. Do not touch the pedal or the cable.')) return result('Write test: cancelled.', '');
+    log('write test: ' + before.length + ' files before; writing ' + TEST_FILE + ', ' + data.length + ' bytes');
+    const steps = [['check'], ['readStep'], ['checkEnd'], ['remove'], ['openWrite'], ['readStep']];
+    for (const [name] of steps) if (!await ask(name)) { await ask('closeA'); await ask('closeB'); return result('Write test: no reply to ' + name + '; stopped before writing data. See the log.', 'bad') }
+    for (let at = 0; at < data.length; at += 512) {
+      if (!await ask('writeBlock', 3000, data.slice(at, at + 512)) || !await ask('readStep')) { await ask('closeA'); await ask('closeB'); return result('Write test: no reply while writing block ' + (at / 512 + 1) + '. See the log, then check the file list.', 'bad') }
     }
     await ask('closeA'); await ask('closeB');
-    if (!file.length) return result('Read ' + name + ': no data came back. See the log.', 'warn');
-    const url = URL.createObjectURL(new Blob([new Uint8Array(file)]));
-    Object.assign($('save'), { href: url, download: name, hidden: false });
-    result('Read ' + name + ': ' + file.length + ' bytes (CRC checked). Save it and send it over.', 'ok');
+    const back = await readFile(TEST_FILE), after = await listFiles();
+    const same = back && back.length === data.length && back.every((b, i) => b === data[i]);
+    const listed = after.find(f => f.name === TEST_FILE);
+    log('write test: read back ' + (back ? back.length : 'nothing') + ' bytes, ' + (same ? 'identical' : 'DIFFERENT') + '; ' + after.length + ' files listed, ' + TEST_FILE + (listed ? ' listed with ' + listed.size + ' bytes' : ' not listed'));
+    result(same && listed && after.length === before.length + 1
+      ? 'Write test: ' + TEST_FILE + ' written, read back identical, listed (' + after.length + ' files). Now power-cycle the pedal and check it plays, then delete it (7).'
+      : 'Write test: something did not check out. Copy the log and send it; don\'t power-cycle yet.', same && listed ? 'ok' : 'bad');
+  },
+  async deletetest() {
+    const before = await listFiles();
+    if (!before.some(f => f.name === TEST_FILE)) return result('Delete: ' + TEST_FILE + ' is not on the pedal.', 'warn');
+    if (!confirm('Delete ' + TEST_FILE + ' from the pedal?')) return result('Delete: cancelled.', '');
+    await ask('check'); await ask('readStep'); await ask('checkEnd');
+    const reply = await ask('remove');
+    await ask('closeA'); await ask('closeB');
+    const after = await listFiles();
+    const gone = !after.some(f => f.name === TEST_FILE);
+    log('delete: ' + (reply ? 'answered' : 'no reply') + '; ' + after.length + ' files listed, ' + TEST_FILE + (gone ? ' gone' : ' STILL LISTED'));
+    result(gone && after.length === before.length - 1 ? 'Delete: ' + TEST_FILE + ' removed; ' + after.length + ' files, as before the test.' : 'Delete: did not check out. Copy the log and send it.', gone ? 'ok' : 'bad');
   },
   async editor() { const reply = await ask('editorOn'); result(reply ? 'Editor mode: answered.' : 'Editor mode: no answer (the pedal may not acknowledge it; carry on).', reply ? 'ok' : 'warn') },
   async pcmode() { const reply = await ask('pcmodeOn'); result(reply ? 'PC mode: answered.' : 'PC mode: no answer.', reply ? 'ok' : 'warn') },
@@ -173,22 +314,7 @@ const STEPS = {
     const max = word(10), free = word(15);
     result('Disk usage: ' + free.toLocaleString() + ' of ' + max.toLocaleString() + ' bytes free.', 'ok');
   },
-  async list() {
-    $('files').textContent = '';
-    const names = [];
-    let reply = await ask('findFirst');
-    for (let guard = 0; reply && guard < 600; guard++) {
-      const d = Array.from(reply).slice(1);
-      if (d[3] !== 0x60 || d[4] !== 0x04) break;
-      const end = d.indexOf(0, 14), name = String.fromCharCode(...d.slice(14, end > 14 ? end : 27));
-      if (!name) break;
-      names.push(name);
-      const item = document.createElement('li'); item.textContent = name; $('files').append(item);
-      reply = await ask('findNext');
-    }
-    await ask('closeA'); await ask('closeB');
-    result(names.length ? 'Files listed: ' + names.length + '.' : 'List files: no names came back. See the log.', names.length ? 'ok' : 'warn');
-  },
+
 };
 document.querySelectorAll('[data-step]').forEach(button => button.onclick = async () => {
   document.querySelectorAll('[data-step]').forEach(b => b.disabled = true);
