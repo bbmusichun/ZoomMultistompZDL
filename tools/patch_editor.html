@@ -400,9 +400,9 @@
   .drawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(760px,94vw);max-width:94vw;height:100dvh;max-height:100dvh;box-sizing:border-box;overflow:auto;background:var(--panel);color:var(--ink);border:var(--b) solid var(--ink);padding:20px;box-shadow:-8px 0 0 var(--ink-soft)}
   dialog::backdrop{background:rgba(0,0,0,.55)}
   .drawer-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
-  #fxRows{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px 12px;align-items:center;margin:8px 0}
-  #fxRows .head{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:1px}
-  #fxRows .acts{display:flex;gap:6px;justify-content:flex-end} #fxRows button{min-height:32px}
+  #fxRows,#fxStockRows{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px 12px;align-items:center;margin:8px 0}
+  #fxRows .head,#fxStockRows .head{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:1px}
+  #fxRows .acts,#fxStockRows .acts{display:flex;gap:6px;justify-content:flex-end} #fxRows button,#fxStockRows button{min-height:32px}
   #fxStatus{margin:6px 0}
   .drawer .bar{padding:12px 0;flex-wrap:wrap} .drawer details{border-top:1px solid var(--ink-soft);padding:18px 0}
   .drawer summary{cursor:pointer;font-size:18px}.drawer .strip{margin:12px 0}.drawer #log{max-height:260px}
@@ -548,7 +548,7 @@
 </dialog>
 <dialog id="effectsDrawer" class="drawer" aria-labelledby="effectsTitle">
   <div class="drawer-head"><h2 id="effectsTitle">Effects on the pedal</h2><button type="button" data-close="effectsDrawer" aria-label="Close effects">✕</button></div>
-  <p class="hint">Install, update and remove this project's effects over USB, without Zoom Effect Manager. Tested on the MS-70CDR with firmware 2.10. Zoom's own effects are never written or removed here. After a change, power-cycle the pedal to load it. Don't touch the pedal or the cable while a write runs.</p>
+  <p class="hint">Install, update and remove this project's effects over USB, without Zoom Effect Manager. Tested on the MS-70CDR with firmware 2.10. Zoom's own effects are never removed here; missing ones can be put back from Zoom's updater, below. After a change, power-cycle the pedal to load it. Don't touch the pedal or the cable while a write runs.</p>
   <div class="bar">
     <button id="fxScan" type="button">Read the pedal</button>
     <button id="fxBackup" type="button" title="Read every file from the pedal into a zip: the backup to restore from if anything goes wrong">Back up all files</button>
@@ -556,6 +556,12 @@
   </div>
   <p id="fxStatus" class="hint" role="status" aria-live="polite">Connect, then read the pedal.</p>
   <div id="fxRows" role="table" aria-label="This project's effects"></div>
+  <details id="fxStockBox"><summary>Zoom's effects, from Zoom's updater</summary>
+    <p class="hint">Put back Zoom's own effects without Effect Manager. Choose the firmware updater you downloaded from Zoom's site: the Mac .zip (it works for this on any computer), or FS.bin from it. The effects are unpacked and prepared in this browser, the way Effect Manager installs them; nothing is uploaded. Only effects missing from the pedal, or newer than the pedal's copy, can be installed. Effect Manager's library can have newer versions than the updater.</p>
+    <div class="bar"><input type="file" id="fxUpdater" accept=".zip,.bin" aria-label="Choose Zoom's updater (.zip) or its FS.bin"><button id="fxReadUpdater" type="button">Read it</button></div>
+    <p id="fxStockStatus" class="hint" role="status" aria-live="polite"></p>
+    <div id="fxStockRows" class="fx-rows" role="table" aria-label="Zoom's effects in the updater"></div>
+  </details>
   <details><summary>Install a file from your computer</summary>
     <p class="hint">For files made by the NAM and cab loaders (NAM… and C… files). Other files are refused.</p>
     <div class="bar"><input type="file" id="fxFile" accept=".ZDL,.zdl" aria-label="Choose a .ZDL file"><button id="fxInstallFile" type="button">Install it</button></div>
@@ -596,7 +602,7 @@
   <button id="openSupport" type="button" aria-haspopup="dialog" aria-controls="supportDialog" title="Support the ZoomMultistompZDL project"><span aria-hidden="true">♡</span> Support</button>
   <button id="clearNotice" aria-label="Clear notification" title="Clear notification">✕</button>
 </footer>
-<script src="cover_art.js"></script>
+<script src="cover_art.js"></script><script src="zdl_strip.js"></script>
 <script>
 "use strict";
 /* ---------- patch codec (bit tables ported from g200kg/zoom-ms-utility, MIT) */
@@ -2888,7 +2894,9 @@ $("impsyx").onchange=midiAction(async ev=>{
    checked against every file on the pedal; every write is read back; the
    effect file is written before the list, and the list changed before a file
    is deleted, so the list never names a missing file. */
-let fsWaiter=null, fsIndex=null, fsFiles=null, fsListSaved=false;
+let fsWaiter=null, fsIndex=null, fsFiles=null, fsListSaved=false, fsStock=null;
+// Effect heads already read (name -> {size, info}); a write or delete forgets that file.
+const fsHeads=new Map();
 const FS_LIST="FLST_SEQ.ZDT";
 function fsAsk(body,timeout=1500){
   return new Promise(resolve=>{
@@ -2939,6 +2947,7 @@ async function fsRead(name,maxBlocks=256){
   return out;
 }
 async function fsWrite(name,data){
+  fsHeads.delete(name.toUpperCase());
   for(const body of [[0x60,0x25,0,0,...fsName(name)],[0x60,0x05,0],[0x60,0x27],[0x60,0x24,...fsName(name)],
                      [0x60,0x20,0x01,0,0,0,0,0,0,0,0,0,...fsName(name)],[0x60,0x05,0]])
     if(!await fsAsk(body)){await fsClose();throw new Error("No reply from the pedal before writing "+name+"; nothing was written.");}
@@ -2953,6 +2962,7 @@ async function fsWrite(name,data){
   if(back.length!==data.length||back.some((b,i)=>b!==data[i]))throw new Error(name+" read back different from what was written.");
 }
 async function fsDelete(name){
+  fsHeads.delete(name.toUpperCase());
   await fsAsk([0x60,0x25,0,0,...fsName(name)]);await fsAsk([0x60,0x05,0]);await fsAsk([0x60,0x27]);
   await fsAsk([0x60,0x24,...fsName(name)]);await fsClose();
 }
@@ -3001,12 +3011,18 @@ function fsOurs(name,info){
   return /^(NAM|C)\d/.test(up)&&info.gid===8&&info.fxid>=500&&info.fxid<=957;
 }
 const fsMaybeOurs=name=>/\.ZDL$/i.test(name)&&((fsIndex&&fsIndex.some(e=>e.file.toUpperCase()===name.toUpperCase()))||/^(NAM|C)\d/i.test(name));
+// One effect's header (ID and version), read once per file version.
+async function fsHead(f){
+  const key=f.name.toUpperCase(),known=fsHeads.get(key);
+  if(known&&known.size===f.size)return known.info;
+  const info=fsInfo(await fsRead(f.name,1));fsHeads.set(key,{size:f.size,info});return info;
+}
 // Every effect's ID, for the clash check before a new install.
 async function fsAllIds(){
   const rest=fsFiles.files.filter(f=>/\.ZDL$/i.test(f.name)&&f.info===undefined);
   for(const [i,f] of rest.entries()){
     if(i%10===0)$("fxStatus").textContent="Checking effect IDs on the pedal: "+(i+1)+" of "+rest.length+"…";
-    f.info=fsInfo(await fsRead(f.name,1));
+    f.info=await fsHead(f);
   }
 }
 function fsSay(text,warn){$("fxStatus").textContent=text;if(warn)banner(text);log("effects: "+text,warn?"warn":undefined);}
@@ -3029,13 +3045,14 @@ async function fsScan(){
   fsSay(files.length+" files. Reading our effects' versions…");
   for(const [i,f] of ours.entries()){
     if(i%10===0)$("fxStatus").textContent="Reading our effects' versions: "+(i+1)+" of "+ours.length+"…";
-    f.info=fsInfo(await fsRead(f.name,1));
+    f.info=await fsHead(f);
   }
   const usage=await fsAsk([0x60,0x29,0,0,0,0,0]);
   let free=null;
   if(usage){const d=usage.slice(1);if(d[3]===0x60&&d[4]===0x04)free=d[15]+d[16]*128+d[17]*16384+d[18]*2097152+d[19]*268435456;}
   fsFiles={files,free};
   fsRender();
+  if(fsStock){await fsStockHeads();fsRenderStock();}
   fsSay(files.length+" files on the pedal"+(free!=null?", "+Math.round(free/1024)+" KB free":"")+".");
 }
 function fsRender(){
@@ -3064,12 +3081,18 @@ async function fsKeepList(){
   if(!fsListSaved){fsOffer(list,"pedal-"+FS_LIST);fsListSaved=true;}
   return list;
 }
-async function fsInstall(name,data){
+// stock: one of Zoom's effects from Zoom's updater (fsReadUpdater); it may be
+// added, or replace an older copy of itself, never anything else.
+async function fsInstall(name,data,{stock=false}={}){
   fsCanWrite();
   const info=fsInfo(data);
-  if(!fsOurs(name,info))throw new Error(name+" is not one of this project's effects or a NAM/cab loader file; it is not installed here.");
+  if(!info)throw new Error(name+" is not an effect file.");
+  if(!stock&&!fsOurs(name,info))throw new Error(name+" is not one of this project's effects or a NAM/cab loader file; it is not installed here.");
   if(!fsFiles)await fsScan();
   const existing=fsFiles.files.find(f=>f.name.toUpperCase()===name.toUpperCase());
+  if(existing&&existing.info===undefined)existing.info=await fsHead(existing);
+  if(existing&&stock&&existing.info&&existing.info.gid===info.gid&&existing.info.fxid===info.fxid&&!(fsVersion(info.version)>fsVersion(existing.info.version)))
+    throw new Error("The pedal's "+existing.name+" is version "+existing.info.version+"; not replacing it with "+info.version+".");
   if(existing){
     if(!existing.info||existing.info.gid!==info.gid||existing.info.fxid!==info.fxid)throw new Error("The pedal's "+existing.name+" is a different effect; not replacing it.");
     const current=await fsRead(existing.name);
@@ -3127,6 +3150,53 @@ async function fsInstallIndexed(e){
   await fsInstall(e.file,data);
 }
 const fsRemoveIndexed=e=>fsRemove(e.file);
+const fsVersion=v=>{const n=parseFloat(v);return Number.isFinite(n)?n:-1;};
+// Zoom's effects from the updater the user chose (ZdlStrip, zdl_strip.js).
+async function fsReadUpdater(){
+  const f=$("fxUpdater").files[0];if(!f){banner("Choose Zoom's updater (.zip) or its FS.bin first.");return;}
+  const say=t=>{$("fxStockStatus").textContent=t;};
+  say("Unpacking "+f.name+"…");
+  const fx=await ZdlStrip.updaterEffects(new Uint8Array(await f.arrayBuffer()));
+  fsStock=fx.map(e=>({...e,info:fsInfo(e.data)})).filter(e=>e.info);
+  log("effects: "+fsStock.length+" of Zoom's effects in "+f.name);
+  if(midiOut&&!fsFiles)await fsScan();
+  if(fsFiles)await fsStockHeads();
+  fsRenderStock();
+}
+// The pedal's copies of the updater's effects: their versions, to compare.
+async function fsStockHeads(){
+  const names=new Set(fsStock.map(e=>e.file.toUpperCase()));
+  const mine=fsFiles.files.filter(p=>names.has(p.name.toUpperCase())&&p.info===undefined);
+  for(const [i,p] of mine.entries()){if(i%10===0)$("fxStockStatus").textContent="Reading the pedal's versions: "+(i+1)+" of "+mine.length+"…";p.info=await fsHead(p);}
+}
+function fsStockState(e){
+  if(!fsFiles)return {text:"—"};
+  const p=fsFiles.files.find(x=>x.name.toUpperCase()===e.file.toUpperCase());
+  if(!p){
+    const as=fsFiles.files.find(x=>x.info&&x.info.gid===e.info.gid&&x.info.fxid===e.info.fxid);
+    return as?{text:"as "+as.name}:{text:"—",act:"Install"};
+  }
+  if(!p.info||p.info.gid!==e.info.gid||p.info.fxid!==e.info.fxid)return {text:"another effect"};
+  return fsVersion(e.info.version)>fsVersion(p.info.version)?{text:p.info.version,act:"Update"}:{text:p.info.version,ok:true};
+}
+function fsRenderStock(){
+  const rows=$("fxStockRows");rows.textContent="";
+  if(!fsStock)return;
+  const shown=fsStock.map(e=>({e,st:fsStockState(e)})).filter(x=>!x.st.ok);
+  const same=fsStock.length-shown.length;
+  $("fxStockStatus").textContent=fsStock.length+" of Zoom's effects in the updater. "+(fsFiles
+    ?(shown.length?shown.length+" missing from the pedal or newer than its copy":"Nothing to install")+(same?"; "+same+" already on the pedal at this version or newer.":".")
+    :"Connect and read the pedal to see which are missing.");
+  if(!shown.length)return;
+  for(const h of ["Effect","On the pedal","In the updater",""]){const c=document.createElement("div");c.className="head";c.textContent=h;rows.appendChild(c);}
+  for(const {e,st} of shown){
+    const known=BYID[(((e.info.fxid&63)<<17)|(((e.info.fxid>>6)&1)<<30)|(((e.info.fxid>>7)&7)<<8)|(e.info.gid<<1))>>>0];
+    for(const t of [known?known.name+" ("+e.file+")":e.file,st.text,e.info.version]){const c=document.createElement("div");c.textContent=t;rows.appendChild(c);}
+    const acts=document.createElement("div");acts.className="acts";
+    if(st.act){const b=document.createElement("button");b.type="button";b.textContent=st.act;b.onclick=midiAction(()=>fsInstall(e.file,Array.from(e.data),{stock:true}));acts.appendChild(b);}
+    rows.appendChild(acts);
+  }
+}
 function fsZip(entries){
   const parts=[],central=[],enc=new TextEncoder();let offset=0;
   const u16=v=>[v&255,v>>8&255],u32=v=>[v&255,v>>8&255,v>>16&255,v>>>24&255];
@@ -3156,6 +3226,7 @@ async function fsBackup(){
 }
 $("fxScan").onclick=midiAction(fsScan);
 $("fxBackup").onclick=midiAction(fsBackup);
+$("fxReadUpdater").onclick=midiAction(fsReadUpdater);
 $("fxInstallFile").onclick=midiAction(async()=>{
   const f=$("fxFile").files[0];if(!f){banner("Choose a .ZDL file first.");return;}
   await fsLoadIndex();

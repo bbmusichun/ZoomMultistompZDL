@@ -140,6 +140,70 @@ function strip(zdl){
   return res;
 }
 
-const api={strip};
+// ---- Zoom's effects from Zoom's own firmware updater (as zoom_fs.py stock) ----
+
+// One file from a zip, found by `want(name)`; stored or deflated entries.
+async function unzipOne(bytes,want){
+  const b=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes),v=view(b),dec=new TextDecoder();
+  let end=b.length-22;while(end>=0&&v.getUint32(end,true)!==0x06054b50)end--;
+  if(end<0)throw new Error("not a zip file");
+  let at=v.getUint32(end+16,true);
+  for(let k=v.getUint16(end+10,true);k>0;k--){
+    if(v.getUint32(at,true)!==0x02014b50)throw new Error("the zip's directory is damaged");
+    const method=v.getUint16(at+10,true),csize=v.getUint32(at+20,true),size=v.getUint32(at+24,true),off=v.getUint32(at+42,true);
+    const nl=v.getUint16(at+28,true),name=dec.decode(b.subarray(at+46,at+46+nl));
+    at+=46+nl+v.getUint16(at+30,true)+v.getUint16(at+32,true);
+    if(!want(name))continue;
+    const start=off+30+v.getUint16(off+26,true)+v.getUint16(off+28,true),raw=b.subarray(start,start+csize);
+    let out;
+    if(method===0)out=raw.slice();
+    else if(method===8)out=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+    else throw new Error(name+" uses a compression this page can't read");
+    if(out.length!==size)throw new Error(name+" did not unpack whole");
+    return out;
+  }
+  return null;
+}
+
+// Files in an updater's FS.bin. It holds several directory copies: an entry
+// whose byte 11 is 00 is superseded, and the last valid entry for a name wins.
+const DIR_AT=0x3000,DATA_AT=0xA000,CLUSTER=0x1000,CL_HDR=6;
+function fsBinFiles(img){
+  const v=view(img),files=new Map();
+  for(let at=DIR_AT;at+32<=DATA_AT&&at+32<=img.length;at+=32){
+    if(img[at+16]===0xff||img[at+11]!==0xff)continue;
+    let name="";for(let i=16;i<28&&img[at+i]!==0xff;i++)name+=String.fromCharCode(img[at+i]);
+    name=name.replace(/\0+$/,"");
+    const size=v.getUint32(at+12,true),out=new Uint8Array(size),seen=new Set();
+    let cl=v.getUint16(at+8,true),got=0;
+    while(got<size){
+      const base=DATA_AT+cl*CLUSTER;
+      if(cl===0xffff||seen.has(cl)||base+CL_HDR>img.length){got=-1;break;}
+      seen.add(cl);
+      const next=v.getUint16(base+2,true),used=v.getUint16(base+4,true);
+      if(got+used>size){got=-1;break;}
+      out.set(img.subarray(base+CL_HDR,base+CL_HDR+used),got);got+=used;cl=next;
+    }
+    if(got===size)files.set(name,out);
+  }
+  return files;
+}
+
+// The stock effects in an updater (the .zip as Zoom ships it, or its FS.bin),
+// stripped as Effect Manager installs them: [{file, data}], by name.
+async function updaterEffects(bytes){
+  const b=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
+  let img=b;
+  if(b[0]===0x50&&b[1]===0x4b){
+    img=await unzipOne(b,n=>!n.startsWith("__MACOSX/")&&/(^|\/)FS\.bin$/.test(n));
+    if(!img)throw new Error("No FS.bin in this zip. Use Zoom's Mac updater .zip (it works for this on any computer), or FS.bin from it.");
+  }
+  const out=[];
+  for(const [file,data] of fsBinFiles(img))if(/\.ZDL$/i.test(file))out.push({file,data:strip(data)});
+  if(!out.length)throw new Error("No effects found: this doesn't look like a MultiStomp updater's FS.bin.");
+  return out.sort((a,b)=>a.file<b.file?-1:a.file>b.file?1:0);
+}
+
+const api={strip,updaterEffects,fsBinFiles,unzipOne};
 if(typeof module!=='undefined')module.exports=api;else root.ZdlStrip=api;
 })(globalThis);

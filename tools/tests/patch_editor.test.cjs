@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm');
 const src=fs.readFileSync(require('node:path').join(__dirname,'../patch_editor.html'),'utf8');
 function fn(name){const start=src.search(new RegExp('(?:async )?function '+name+'\\('));assert(start>=0);return src.slice(start,src.indexOf('\n}',start)+2);}
-function context(extra={}){return vm.createContext({setTimeout,clearTimeout,performance,Promise,Map,Set,Math,Array,Number,Error,busy:false,syncing:false,midiActionActive:false,actionCancelled:false,transientBypassSlot:-1,patchGeneration:0,nextSend:0,dumpCooldownUntil:0,pendingDump:null,sxAccum:null,autoApplyPending:false,sleep:async()=>{},banner:()=>{},log:()=>{},updateActionState:()=>{},...extra});}
+function context(extra={}){return vm.createContext({setTimeout,clearTimeout,performance,Promise,Map,Set,Math,Array,Number,Error,busy:false,syncing:false,midiActionActive:false,actionCancelled:false,transientBypassSlot:-1,patchGeneration:0,nextSend:0,dumpCooldownUntil:0,pendingDump:null,sxAccum:null,fsWaiter:null,autoApplyPending:false,sleep:async()=>{},banner:()=>{},log:()=>{},updateActionState:()=>{},...extra});}
 test('capture sync restores original DSP costs when saved overrides disappear or become invalid',()=>{
  for(const baseline of [194,177]){
   let saved=[{slot:1,shortName:'eco',cost:160}];

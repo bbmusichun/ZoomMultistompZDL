@@ -3,6 +3,8 @@
 On an MS-70CDR you can also install them without Effect Manager: open the
 [Patch Editor](https://themanro.github.io/ZoomMultistompZDL/tools/patch_editor.html),
 connect, and use **Effects** (see the README).
+Effects can also put back Zoom's own effects from Zoom's firmware updater,
+the way Effect Manager installs them, without Effect Manager.
 
 The release `.ZDL` files are in [../dist/](../dist/). Use
 [Zoom Effect Manager](https://zoomeffectmanager.com/en/download/) 2.3.3 or

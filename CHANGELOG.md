@@ -14,6 +14,16 @@ dated. Effects in [dist/](dist/) carry their own version in the file
   `build/dist_index.py`), reads back every write, writes the effect before
   the effect list, and backs up all the pedal's files on request. Tested on
   the owner's pedal (2026-10-23): remove, power-cycle, install, power-cycle.
+- **Zoom's effects from Zoom's updater**: in Effects, choose the firmware
+  updater you downloaded from Zoom (the Mac `.zip`, or its `FS.bin`). The
+  page unpacks it and strips each effect as Effect Manager does
+  (`tools/zdl_strip.js`, byte-identical to TI's strip6x on all 137 MS-70CDR
+  2.10 effects), all in the browser, nothing uploaded. It lists the effects
+  missing from the pedal or newer than its copy, and installs only those:
+  never an older version over a newer one, never in place of another effect.
+  Not yet tested on a pedal.
+- **[editor.html](tools/editor.html)**: the Patch Editor in Modwerk's design,
+  running the same code. In testing; the classic editor stays the default.
 
 ### In dist/
 - **Loop 0.03**: with Long turned on while a loop is recorded, the screen

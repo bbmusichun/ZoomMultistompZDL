@@ -42,6 +42,7 @@
   select,input[type=text],textarea{background:var(--field);border:1px solid var(--control-border);border-radius:8px;padding:6px 10px}
   select{appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23bebec9' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
   a{color:var(--accent)}
+  input[type=file]::file-selector-button{margin-right:10px;background:var(--surface-raised);color:var(--text);border:1px solid var(--control-border);border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}
   .hint{color:var(--muted);font-size:13px}
   [hidden]{display:none!important}
 
@@ -147,12 +148,12 @@
   .drawer .striptools{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
   .drawer label{display:inline-flex;align-items:center;gap:6px}
   #locrows,#librows-local{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
-  #fxRows{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px 12px;align-items:center;margin:8px 0}
-  #fxRows .head{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint)}
-  #fxRows>div:not(.head){padding:3px 0;border-bottom:1px solid var(--line)}
-  #fxRows .acts{display:flex;gap:6px;justify-content:flex-end;border-bottom:1px solid var(--line)}
-  #fxRows button{min-height:28px;padding:2px 10px;font-size:12px}
-  #fxStatus{color:var(--muted)}
+  #fxRows,#fxStockRows{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px 12px;align-items:center;margin:8px 0}
+  #fxRows .head,#fxStockRows .head{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint)}
+  #fxRows>div:not(.head),#fxStockRows>div:not(.head){padding:3px 0;border-bottom:1px solid var(--line)}
+  #fxRows .acts,#fxStockRows .acts{display:flex;gap:6px;justify-content:flex-end;border-bottom:1px solid var(--line)}
+  #fxRows button,#fxStockRows button{min-height:28px;padding:2px 10px;font-size:12px}
+  #fxStatus,#fxStockStatus{color:var(--muted)}
   #fxSave{display:inline-flex;align-items:center;min-height:34px;padding:0 12px;border:1px solid var(--accent);border-radius:8px;text-decoration:none}
   #log{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:pre-wrap;max-height:300px;overflow:auto;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px}
   #diagpanel{font-size:13px}
