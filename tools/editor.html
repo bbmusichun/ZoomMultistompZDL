@@ -85,7 +85,10 @@
 
   /* ---- main: the six slots ---- */
   .mw-main{padding:20px 22px 110px;min-width:0}
-  #operationStatus{margin:0 0 14px;color:var(--muted);font-size:13px}
+  .mw-chainbar{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap;margin:0 0 14px}
+  .mw-chainbar [role=group]{display:flex;gap:8px;flex-wrap:wrap;margin:0;padding:0}
+  .mw-chainbar [role=group] button{min-height:30px;padding:4px 12px;font-size:13px}
+  #operationStatus{margin:0;color:var(--muted);font-size:13px}
   #emptyEditor{background:var(--surface);border:1px dashed var(--line-hover);border-radius:var(--radius);padding:28px;margin-bottom:16px}
   #emptyEditor h2{margin:0 0 6px;font-size:18px}
   #emptyEditor p{margin:0;color:var(--muted)}
@@ -109,6 +112,12 @@
   .knob canvas{cursor:ns-resize;border-radius:50%}
   .knob.mode-selector select{max-width:100%;font-size:11px;padding:2px 22px 2px 6px;min-height:24px;background-position:right 6px center}
   .slot.padactive{box-shadow:0 0 0 2px var(--accent)}
+  /* the whole chain in one row, like on the pedal */
+  @media(min-width:1440px){
+    #slots{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+    .slot{padding:10px 10px 12px}
+    .knobs{grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px 2px}
+  }
   @media(max-width:1180px){#slots{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:820px){
     .mw{grid-template-columns:1fr}
@@ -122,6 +131,9 @@
   dialog{color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px}
   dialog::backdrop{background:rgba(8,8,10,.6)}
   dialog.drawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(720px,96vw);max-width:96vw;height:100dvh;max-height:100dvh;border-radius:0;border-width:0 0 0 1px;overflow:auto;padding:22px 24px 96px;background:var(--sidebar)}
+  dialog.drawer.wide{width:min(880px,96vw)}
+  dialog.drawer.wide[open]{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+  .mw-frame{flex:1;width:100%;border:0;background:var(--sidebar)}
   .drawer-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
   .drawer-head h2{margin:0;font-size:20px;font-weight:600}
   .drawer-head button{min-height:32px;width:32px;padding:0}
@@ -195,6 +207,42 @@
   arrange();
 })();
 
+// NAM / Cab: the NAM + Cab Loader page in a side panel of its own (it was a
+// link in Settings), restyled to match. Returns the button that opens it.
+function namPanel(){
+  const old=[...document.querySelectorAll("#settingsDrawer details")].find(d=>/NAM/.test(d.querySelector("summary")?.textContent||""));
+  if(old)old.hidden=true;
+  const d=document.createElement("dialog");d.id="namDrawer";d.className="drawer wide";d.setAttribute("aria-labelledby","namDrawerTitle");
+  d.innerHTML='<div class="drawer-head"><h2 id="namDrawerTitle">NAM + Cab</h2><button type="button" aria-label="Close NAM and Cab">✕</button></div><iframe class="mw-frame" title="NAM + Cab Loader"></iframe>';
+  d.querySelector(".drawer-head button").onclick=()=>d.close();
+  document.body.appendChild(d);
+  const frame=d.querySelector("iframe");
+  frame.addEventListener("load",()=>{const doc=frame.contentDocument;if(!doc)return;const s=doc.createElement("style");s.textContent=LOADER_SKIN;doc.head.appendChild(s);});
+  const b=document.createElement("button");b.type="button";b.id="openNam";b.textContent="NAM / Cab";b.title="Turn a NAM capture or cab IRs into an effect";
+  b.onclick=()=>{if(!frame.getAttribute("src"))frame.src="nam_loader.html";d.showModal();};
+  return b;
+}
+const LOADER_SKIN=`
+:root{color-scheme:dark;--ink:#f5f5f8;--paper:#212124;--panel:#2c2c31;--line:#3d3d45;--accent:#a5adff;--accent-ink:#171722}
+body{background:var(--paper);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:none;margin:0;background:transparent;border:0;padding:0 2px 48px;box-shadow:none}
+header{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:16px}header>a,header h1{display:none}header p{margin:0;color:#dadade}
+h2{font-size:16px;font-weight:600}a{color:var(--accent)}label{font-weight:600}.hint{color:#bebec9;font-size:13px}
+.pick,.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}.pick{border-style:dashed}
+button,.download{background:#303036;color:var(--ink);border:1px solid #55555f;border-radius:8px;padding:8px 14px;font:600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button:hover,.download:hover{background:#38383f}#build,#buildCab,.download{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tools button{padding:4px 10px;font-size:13px}
+input,select,.ident input,.ident select{color:var(--ink);background:#1a1a1e;border:1px solid #55555f;border-radius:8px}
+input[type=radio],input[type=checkbox]{accent-color:var(--accent)}
+input[type=file]{border:0;background:none;padding:0}
+input[type=file]::file-selector-button{margin-right:10px;background:#303036;color:var(--ink);border:1px solid #55555f;border-radius:8px;padding:6px 12px;font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
+#result,.cabs,.resp{border-top:1px solid var(--line)}#status[data-error="true"],#cabStatus[data-error="true"]{color:#f08a7e}
+#respPlot,.fit canvas{background:#1a1a1e;border:1px solid var(--line);border-radius:8px}
+canvas.lcd{border:1px solid var(--line);border-radius:6px}.icons button{background:#111114;border:2px solid transparent;border-radius:6px}.icons button[aria-checked=true]{border-color:var(--accent)}
+.icons button:focus-visible,.icon-toggle:focus-visible{outline:2px solid var(--accent)}
+details{border-top:1px solid var(--line);padding-top:12px}footer{color:#afafbd}
+`;
+
 function arrange(){
   const $=id=>document.getElementById(id);
   // This page has one look; the original's screen styles do not apply here.
@@ -209,8 +257,7 @@ function arrange(){
   const patch=document.createElement("div");patch.className="mw-actions";patch.style.flex="1";patch.style.minWidth="220px";
   for(const id of ["currentPatch","dspmeter","editStatus"])patch.appendChild($(id));
   const acts=document.createElement("div");acts.className="mw-actions";
-  const perf=document.querySelector('[aria-label="Pedal performance controls"]');if(perf)acts.appendChild(perf);
-  for(const id of ["openLibrary","openEffects","openSettings"])if($(id))acts.appendChild($(id));
+  for(const b of [$("openLibrary"),$("openEffects"),namPanel(),$("openSettings")])if(b)acts.appendChild(b);
   const classic=document.createElement("a");classic.href="patch_editor.html";classic.className="mw-classic";classic.textContent="Classic editor";classic.title="The original Patch Editor (same features)";
   acts.appendChild(classic);
   top.append(status,patch,acts);
@@ -222,11 +269,19 @@ function arrange(){
   $("mwSide").appendChild($("librows"));
   // The Library panel keeps only "My Library"; the pedal's list now lives in the sidebar.
   if($("pedalTab")){$("pedalTab").hidden=true;$("browserTab").click();$("browserTab").hidden=true;}
-  const libTitle=$("libraryTitle");if(libTitle)libTitle.textContent="Library";
+  for(const [btn,title,name] of [["openLibrary","libraryTitle","Patch Library"],["openEffects","effectsTitle","Effects Library"]]){
+    if($(btn))$(btn).textContent=name;
+    if($(title))$(title).textContent=name;
+  }
 
   // Main: status, the empty state, the six slots.
   const m=$("mwMain");m.textContent="";
-  for(const id of ["operationStatus","emptyEditor","slots"])if($(id))m.appendChild($(id));
+  // Above the chain: the status line, and the controls that act on the whole chain.
+  const chainbar=document.createElement("div");chainbar.className="mw-chainbar";
+  if($("operationStatus"))chainbar.appendChild($("operationStatus"));
+  const perf=document.querySelector('[aria-label="Pedal performance controls"]');if(perf)chainbar.appendChild(perf);
+  m.appendChild(chainbar);
+  for(const id of ["emptyEditor","slots"])if($(id))m.appendChild($(id));
 
   // The rest (dialogs, drawers, log, notification bar) stays where the editor put it.
   const pe=$("pe");pe.hidden=false;
