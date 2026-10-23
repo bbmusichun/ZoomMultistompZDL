@@ -145,6 +145,13 @@ your patch library lives in your own browser).
   will tell you if you are on one of them. **Chrome 152 is currently broken** —
   a Web MIDI *input* regression means output works, no dump ever arrives, and no
   error is raised. `tools/midi_check.html` confirms it in isolation.
+* **Install effects without Effect Manager (MS-70CDR, new):** **Effects** in
+  the toolbar lists this project's effects with the version on your pedal,
+  and installs, updates or removes them over USB. It never touches Zoom's own
+  effects, checks names and effect IDs against everything on the pedal,
+  reads back every write, and can back up all the pedal's files first.
+  Power-cycle the pedal after a change. Tested on firmware 2.10
+  ([how it works](docs/EFFECT-INSTALL-PROTOCOL.md)).
 * **Close Zoom Effect Manager first** — it holds the MIDI port. "The pedal did
   not respond" is usually this.
 * Slots 1–3 respond to knob moves instantly. Slots 4–6 cannot be edited live by

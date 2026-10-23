@@ -400,6 +400,10 @@
   .drawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(760px,94vw);max-width:94vw;height:100dvh;max-height:100dvh;box-sizing:border-box;overflow:auto;background:var(--panel);color:var(--ink);border:var(--b) solid var(--ink);padding:20px;box-shadow:-8px 0 0 var(--ink-soft)}
   dialog::backdrop{background:rgba(0,0,0,.55)}
   .drawer-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+  #fxRows{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px 12px;align-items:center;margin:8px 0}
+  #fxRows .head{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:1px}
+  #fxRows .acts{display:flex;gap:6px;justify-content:flex-end} #fxRows button{min-height:32px}
+  #fxStatus{margin:6px 0}
   .drawer .bar{padding:12px 0;flex-wrap:wrap} .drawer details{border-top:1px solid var(--ink-soft);padding:18px 0}
   .drawer summary{cursor:pointer;font-size:18px}.drawer .strip{margin:12px 0}.drawer #log{max-height:260px}
   .drawer [role="tab"][aria-selected="true"]{background:var(--ink);color:var(--panel)}
@@ -538,9 +542,24 @@
   <div class="drawer-head"><h2 id="settingsTitle">Settings</h2><button type="button" data-close="settingsDrawer" aria-label="Close settings">✕</button></div>
   <details open><summary>Appearance</summary><div id="appearanceTools" class="bar"></div></details>
   <details><summary>MIDI controller</summary><p class="hint">Use an external controller to move knobs and select effect slots.</p><div id="controllerTools" class="bar"></div></details>
-  <details><summary>Custom NAM captures</summary><p class="hint">Convert a compatible capture, then install it through Effect Manager.</p><a href="nam_loader.html" target="_blank" rel="noopener">Open NAM Loader ↗</a></details>
+  <details><summary>Custom NAM captures</summary><p class="hint">Convert a compatible capture, then install it with Effects (MS-70CDR) or Effect Manager.</p><a href="nam_loader.html" target="_blank" rel="noopener">Open NAM Loader ↗</a></details>
   <details><summary>Advanced</summary><div id="advancedTools" class="bar"></div><h3>Pedal bank backup</h3><p class="hint">Back up before replacing stored patches. Restore overwrites pedal memory.</p><div id="bankTools" class="bar"></div></details>
   <details id="diagnosticsSection"><summary>Diagnostics</summary><p class="hint">Troubleshooting and recovery tools. Blind writes replace the whole edit buffer.</p><label><input type="checkbox" id="showProbes"> Show diagnostic probes in effect lists</label><button id="directEditTrial" title="Temporary test for the current session: sends live parameter messages to slots 4–6 without automatic patch writes or bypass toggles. Judge the audio, not only the displayed values.">Test direct edits in slots 4–6</button><div id="diagnosticTools" class="bar"></div><details><summary>Developer diagnostics</summary><p class="hint">Protocol experiments for development. Tests can change audible settings and the pedal may auto-save them.</p><div id="developerTools"></div></details></details>
+</dialog>
+<dialog id="effectsDrawer" class="drawer" aria-labelledby="effectsTitle">
+  <div class="drawer-head"><h2 id="effectsTitle">Effects on the pedal</h2><button type="button" data-close="effectsDrawer" aria-label="Close effects">✕</button></div>
+  <p class="hint">Install, update and remove this project's effects over USB, without Zoom Effect Manager. Tested on the MS-70CDR with firmware 2.10. Zoom's own effects are never written or removed here. After a change, power-cycle the pedal to load it. Don't touch the pedal or the cable while a write runs.</p>
+  <div class="bar">
+    <button id="fxScan" type="button">Read the pedal</button>
+    <button id="fxBackup" type="button" title="Read every file from the pedal into a zip: the backup to restore from if anything goes wrong">Back up all files</button>
+    <a id="fxSave" hidden></a>
+  </div>
+  <p id="fxStatus" class="hint" role="status" aria-live="polite">Connect, then read the pedal.</p>
+  <div id="fxRows" role="table" aria-label="This project's effects"></div>
+  <details><summary>Install a file from your computer</summary>
+    <p class="hint">For files made by the NAM and cab loaders (NAM… and C… files). Other files are refused.</p>
+    <div class="bar"><input type="file" id="fxFile" accept=".ZDL,.zdl" aria-label="Choose a .ZDL file"><button id="fxInstallFile" type="button">Install it</button></div>
+  </details>
 </dialog>
 <dialog id="patchPasteDialog" aria-labelledby="patchPasteTitle">
   <form method="dialog">
@@ -1062,6 +1081,7 @@ function onMidi(ev){
   handleSysex(msg);
 }
 function handleSysex(m){
+  if(fsWaiter && m[1]===0x52 && m[3]===DEVID && m[4]===0x60){ fsWaiter(m); return; }
   if(m[1]===0x52 && m[3]===DEVID && m[4]===0x28 && m.length===146){
     const received=m.slice(0,146); noteSeenIds(received);
     if(pendingDump){
@@ -2858,10 +2878,295 @@ $("impsyx").onchange=midiAction(async ev=>{
   if(midiOut)sendFullPatch();
 });
 
+/* ---------- effects on the pedal: install / update / remove over USB -------
+   The pedal's own file commands (the ones zoom-zt2 uses on the ZD2 pedals),
+   checked on an MS-70CDR 2.10 in normal mode: list, read, write and delete
+   single files (docs/EFFECT-INSTALL-PROTOCOL.md). An effect is a .ZDL file
+   plus a 13-byte record in FLST_SEQ.ZDT, at the end of its group's section.
+   Guards: only this project's effects (dist/index.json) and the NAM/cab
+   loaders' files are ever written or removed; names and effect IDs are
+   checked against every file on the pedal; every write is read back; the
+   effect file is written before the list, and the list changed before a file
+   is deleted, so the list never names a missing file. */
+let fsWaiter=null, fsIndex=null, fsFiles=null, fsListSaved=false;
+const FS_LIST="FLST_SEQ.ZDT";
+function fsAsk(body,timeout=1500){
+  return new Promise(resolve=>{
+    const t=setTimeout(()=>{fsWaiter=null;resolve(null);},timeout);
+    fsWaiter=m=>{clearTimeout(t);fsWaiter=null;resolve(m);};
+    send(zx(body));
+  });
+}
+const fsName=n=>[...Array.from(n,c=>c.charCodeAt(0)),0];
+function fsPack(bytes){const out=[];for(let i=0;i<bytes.length;i+=7){const g=bytes.slice(i,i+7);let hi=0;g.forEach((b,j)=>{if(b&0x80)hi|=1<<(6-j);});out.push(hi,...g.map(b=>b&0x7f));}return out;}
+function fsUnpack(bytes){const out=[];for(let i=0;i<bytes.length;i+=8)for(let j=1;j<8&&i+j<bytes.length;j++)out.push(bytes[i+j]|(bytes[i]&(1<<(7-j))?0x80:0));return out;}
+function fsCrc(bytes){let c=0xffffffff;for(const b of bytes){c^=b;for(let k=0;k<8;k++)c=c&1?(c>>>1)^0xedb88320:c>>>1;}return (c^0xffffffff)>>>0;}
+async function fsClose(){await fsAsk([0x60,0x21,0x40,0,0,0,0]);await fsAsk([0x60,0x09]);}
+async function fsList(){
+  const files=[];let r=await fsAsk([0x60,0x25,0,0,...fsName("*")]);
+  for(let g=0;r&&g<600;g++){
+    const d=r.slice(1);if(d[3]!==0x60||d[4]!==0x04)break;
+    const end=d.indexOf(0,14), name=String.fromCharCode(...d.slice(14,end>14&&end<26?end:26));
+    if(!name)break;
+    files.push({name,size:d[29]+d[30]*128+d[31]*16384+d[32]*2097152+d[33]*268435456});
+    r=await fsAsk([0x60,0x26,0,0,...fsName("*")]);
+  }
+  await fsClose();
+  if(!files.length)throw new Error("The pedal listed no files.");
+  return files;
+}
+// The data block comes in the reply to the step after the read request.
+function fsChunk(r){
+  const d=r?r.slice(1,-1):[];
+  if(d[3]!==0x60||d[4]!==0x04||d[5]!==0x22||d.length<15)return {end:true};
+  const len=d[8]+d[9]*128;if(!len)return {end:true};
+  const data=fsUnpack(d.slice(10,10+len+Math.floor(len/7)+1)).slice(0,len);
+  const t=d.slice(-5), crc=(t[0]+(t[1]<<7)+(t[2]<<14)+(t[3]<<21)+((t[4]&0x0f)<<28))>>>0;
+  return {data,ok:((crc^0xffffffff)>>>0)===fsCrc(data)};
+}
+async function fsRead(name,maxBlocks=256){
+  const out=[];
+  await fsAsk([0x60,0x20,0x02,0,0,0,0,0,0,0,0,0,...fsName(name)]);
+  try{
+    for(let b=0;b<maxBlocks;b++){
+      await fsAsk([0x60,0x05,0]);await fsAsk([0x60,0x22,0x14,0x2f,0x60,0,0x0c,0,0x04,0,0,0]);
+      const c=fsChunk(await fsAsk([0x60,0x05,0]));
+      if(c.end)break;
+      if(!c.ok)throw new Error("Reading "+name+": a block failed its checksum.");
+      out.push(...c.data);
+    }
+  }finally{await fsClose();}
+  return out;
+}
+async function fsWrite(name,data){
+  for(const body of [[0x60,0x25,0,0,...fsName(name)],[0x60,0x05,0],[0x60,0x27],[0x60,0x24,...fsName(name)],
+                     [0x60,0x20,0x01,0,0,0,0,0,0,0,0,0,...fsName(name)],[0x60,0x05,0]])
+    if(!await fsAsk(body)){await fsClose();throw new Error("No reply from the pedal before writing "+name+"; nothing was written.");}
+  for(let at=0;at<data.length;at+=512){
+    const part=data.slice(at,at+512), crc=(fsCrc(part)^0xffffffff)>>>0;
+    const block=[0x60,0x23,0x40,0,0,0,0,part.length&0x7f,(part.length>>7)&0x7f,0,0,0,...fsPack(part),
+                 crc&0x7f,(crc>>>7)&0x7f,(crc>>>14)&0x7f,(crc>>>21)&0x7f,(crc>>>28)&0x0f];
+    if(!await fsAsk(block,3000)||!await fsAsk([0x60,0x05,0])){await fsClose();throw new Error("The pedal stopped answering while writing "+name+".");}
+  }
+  await fsClose();
+  const back=await fsRead(name);
+  if(back.length!==data.length||back.some((b,i)=>b!==data[i]))throw new Error(name+" read back different from what was written.");
+}
+async function fsDelete(name){
+  await fsAsk([0x60,0x25,0,0,...fsName(name)]);await fsAsk([0x60,0x05,0]);await fsAsk([0x60,0x27]);
+  await fsAsk([0x60,0x24,...fsName(name)]);await fsClose();
+}
+function fsInfo(b){
+  if(!b||b.length<0x50||String.fromCharCode(...b.slice(4,8))!=="SIZE"||b[0x4c]!==0x7f||String.fromCharCode(...b.slice(0x4d,0x50))!=="ELF")return null;
+  return {gid:b[0x3c],fxid:b[0x40]|b[0x41]<<8,version:String.fromCharCode(...b.slice(0x44,0x48))};
+}
+// FLST_SEQ.ZDT sections: '>>>' 00 <group> 8 x 00, 13-byte records (name padded to 12, then 00), '<<<' 00 ...
+function fsSection(list,gid){
+  for(let at=0;at+4<list.length;at++)
+    if(list[at]===0x3e&&list[at+1]===0x3e&&list[at+2]===0x3e&&list[at+3]===0&&list[at+4]===gid){
+      for(let end=at+13;end+3<list.length;end+=13)if(list[end]===0x3c&&list[end+1]===0x3c&&list[end+2]===0x3c&&list[end+3]===0)return {start:at+13,end};
+      return null;
+    }
+  return null;
+}
+const fsRecord=(list,at)=>String.fromCharCode(...list.slice(at,at+12)).replace(/\0+$/,"");
+// Every record in every section, with its offset.
+function fsRecords(list){
+  const out=[];
+  for(let at=0;at+13<=list.length;){
+    if(list[at]===0x3e&&list[at+1]===0x3e&&list[at+2]===0x3e&&list[at+3]===0){
+      let r=at+13;
+      for(;r+13<=list.length&&!(list[r]===0x3c&&list[r+1]===0x3c&&list[r+2]===0x3c&&list[r+3]===0);r+=13)out.push({at:r,name:fsRecord(list,r)});
+      at=r+13;
+    }else at++;
+  }
+  return out;
+}
+const fsListHas=(list,name)=>fsRecords(list).some(r=>r.name.toUpperCase()===name.toUpperCase());
+function fsListWith(list,gid,name){
+  const s=fsSection(list,gid);if(!s)throw new Error("The effect list has no section for group "+gid+".");
+  if(list.slice(-13).some(b=>b))throw new Error("The effect list is full.");
+  return [...list.slice(0,s.end),...Array.from(name,c=>c.charCodeAt(0)),...Array(13-name.length).fill(0),...list.slice(s.end,list.length-13)];
+}
+function fsListWithout(list,name){
+  const r=fsRecords(list).find(x=>x.name===name);
+  return r?[...list.slice(0,r.at),...list.slice(r.at+13),...Array(13).fill(0)]:null;
+}
+// What may be written or removed: an effect in dist/index.json (same name and
+// effect ID), or a NAM/cab loader file (NAM… or C…, group 8, IDs 500-957).
+function fsOurs(name,info){
+  if(!info)return false;
+  const up=name.toUpperCase();
+  if(fsIndex&&fsIndex.some(e=>e.file.toUpperCase()===up&&e.gid===info.gid&&e.fxid===info.fxid))return true;
+  return /^(NAM|C)\d/.test(up)&&info.gid===8&&info.fxid>=500&&info.fxid<=957;
+}
+const fsMaybeOurs=name=>/\.ZDL$/i.test(name)&&((fsIndex&&fsIndex.some(e=>e.file.toUpperCase()===name.toUpperCase()))||/^(NAM|C)\d/i.test(name));
+// Every effect's ID, for the clash check before a new install.
+async function fsAllIds(){
+  const rest=fsFiles.files.filter(f=>/\.ZDL$/i.test(f.name)&&f.info===undefined);
+  for(const [i,f] of rest.entries()){
+    if(i%10===0)$("fxStatus").textContent="Checking effect IDs on the pedal: "+(i+1)+" of "+rest.length+"…";
+    f.info=fsInfo(await fsRead(f.name,1));
+  }
+}
+function fsSay(text,warn){$("fxStatus").textContent=text;if(warn)banner(text);log("effects: "+text,warn?"warn":undefined);}
+function fsCanWrite(){
+  if(DEVID!==0x61||READ_ONLY)throw new Error("Installing is only enabled on the MS-70CDR (the tested pedal). Reading and backing up work on any pedal.");
+}
+async function fsLoadIndex(){
+  if(fsIndex)return fsIndex;
+  const r=await fetch("../dist/index.json",{cache:"no-store"});
+  if(!r.ok)throw new Error("Could not load the effect index (dist/index.json).");
+  fsIndex=(await r.json()).effects;return fsIndex;
+}
+async function fsScan(){
+  if(!midiOut){banner("Connect MIDI first.");return;}
+  await fsLoadIndex();
+  fsSay("Reading the file list…");
+  const files=await fsList();
+  // Versions of our effects and loader files only; Zoom's effects are read when an install needs their IDs.
+  const ours=files.filter(f=>fsMaybeOurs(f.name));
+  fsSay(files.length+" files. Reading our effects' versions…");
+  for(const [i,f] of ours.entries()){
+    if(i%10===0)$("fxStatus").textContent="Reading our effects' versions: "+(i+1)+" of "+ours.length+"…";
+    f.info=fsInfo(await fsRead(f.name,1));
+  }
+  const usage=await fsAsk([0x60,0x29,0,0,0,0,0]);
+  let free=null;
+  if(usage){const d=usage.slice(1);if(d[3]===0x60&&d[4]===0x04)free=d[15]+d[16]*128+d[17]*16384+d[18]*2097152+d[19]*268435456;}
+  fsFiles={files,free};
+  fsRender();
+  fsSay(files.length+" files on the pedal"+(free!=null?", "+Math.round(free/1024)+" KB free":"")+".");
+}
+function fsRender(){
+  const rows=$("fxRows");rows.textContent="";
+  for(const h of ["Effect","On the pedal","Available",""]){const c=document.createElement("div");c.className="head";c.textContent=h;rows.appendChild(c);}
+  if(!fsIndex)return;
+  for(const e of fsIndex){
+    const onPedal=fsFiles&&fsFiles.files.find(f=>f.name.toUpperCase()===e.file.toUpperCase());
+    const same=onPedal&&onPedal.info&&onPedal.info.gid===e.gid&&onPedal.info.fxid===e.fxid;
+    const cells=[e.name, onPedal?(same?onPedal.info.version:"another effect"):"—", e.version];
+    for(const t of cells){const c=document.createElement("div");c.textContent=t;rows.appendChild(c);}
+    const acts=document.createElement("div");acts.className="acts";
+    if(fsFiles){
+      const add=(label,fn)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.onclick=midiAction(()=>fn(e));acts.appendChild(b);};
+      if(!onPedal)add("Install",fsInstallIndexed);
+      else if(same){if(onPedal.size!==e.bytes||onPedal.info.version!==e.version)add("Update",fsInstallIndexed);add("Remove",fsRemoveIndexed);}
+    }
+    rows.appendChild(acts);
+  }
+}
+function fsOffer(bytes,name){const a=$("fxSave");a.href=URL.createObjectURL(new Blob([new Uint8Array(bytes)]));a.download=name;a.textContent="Save "+name;a.hidden=false;}
+// Before the first change in a session, read the effect list and offer it for saving.
+async function fsKeepList(){
+  const list=await fsRead(FS_LIST);
+  if(list.length!==4108)throw new Error("Could not read the effect list back; nothing was changed.");
+  if(!fsListSaved){fsOffer(list,"pedal-"+FS_LIST);fsListSaved=true;}
+  return list;
+}
+async function fsInstall(name,data){
+  fsCanWrite();
+  const info=fsInfo(data);
+  if(!fsOurs(name,info))throw new Error(name+" is not one of this project's effects or a NAM/cab loader file; it is not installed here.");
+  if(!fsFiles)await fsScan();
+  const existing=fsFiles.files.find(f=>f.name.toUpperCase()===name.toUpperCase());
+  if(existing){
+    if(!existing.info||existing.info.gid!==info.gid||existing.info.fxid!==info.fxid)throw new Error("The pedal's "+existing.name+" is a different effect; not replacing it.");
+    const current=await fsRead(existing.name);
+    if(current.length===data.length&&current.every((b,i)=>b===data[i])){fsSay(existing.name+" is already this exact build.");return;}
+    if(!confirm("Replace "+existing.name+" "+existing.info.version+" with "+info.version+" ("+data.length+" bytes)? Don't touch the pedal or the cable."))return;
+    fsOffer(current,"pedal-"+existing.name);
+    fsSay("Writing "+existing.name+"…");
+    await fsWrite(existing.name,data);
+    fsSay(existing.name+" updated to "+info.version+" and read back identical. Power-cycle the pedal to load it.");
+  }else{
+    await fsAllIds();
+    const clash=fsFiles.files.find(f=>f.info&&f.info.gid===info.gid&&f.info.fxid===info.fxid);
+    if(clash)throw new Error(clash.name+" on the pedal already uses this effect ID ("+info.gid+"/"+info.fxid+"); not installing.");
+    const file=name.toUpperCase();
+    if(!/^[A-Z0-9_]{1,8}\.ZDL$/.test(file))throw new Error(name+": the pedal needs a name of at most 8 characters plus .ZDL.");
+    if(fsFiles.free!=null&&fsFiles.free<data.length+8192)throw new Error("Not enough space on the pedal ("+Math.round(fsFiles.free/1024)+" KB free).");
+    const list=await fsKeepList();
+    if(fsListHas(list,file))throw new Error("The effect list already names "+file+" although the file is missing. Nothing was changed.");
+    const updated=fsListWith(list,info.gid,file);
+    if(!confirm("Install "+file+" ("+info.version+", "+data.length+" bytes)? It is added to the pedal's effect list. The current effect list is offered for saving first: save it. Don't touch the pedal or the cable."))return;
+    fsSay("Writing "+file+"…");
+    await fsWrite(file,data);
+    fsSay("Adding "+file+" to the effect list…");
+    try{await fsWrite(FS_LIST,updated);}
+    catch(err){
+      log("effects: effect list write failed ("+err.message+"); writing the original back","warn");
+      try{await fsWrite(FS_LIST,list);}catch(again){throw new Error(err.message+" Restoring the effect list also failed ("+again.message+"): restore it from your backup before power-cycling.");}
+      throw new Error(err.message+" The original effect list was written back.");
+    }
+    fsSay(file+" installed and read back identical. Power-cycle the pedal, then find it in its category.");
+  }
+  await fsScan();
+}
+async function fsRemove(name){
+  fsCanWrite();
+  if(!fsFiles)await fsScan();
+  const f=fsFiles.files.find(x=>x.name.toUpperCase()===name.toUpperCase());
+  if(!f)throw new Error(name+" is not on the pedal.");
+  if(!fsOurs(f.name,f.info))throw new Error(f.name+" is not one of this project's effects; it is not removed here.");
+  if(!confirm("Remove "+f.name+" from the pedal? Patches that use it will show an empty slot."))return;
+  const list=await fsKeepList();
+  fsSay("Removing "+f.name+"…");
+  const updated=fsListWithout(list,f.name);
+  if(updated)await fsWrite(FS_LIST,updated);
+  await fsDelete(f.name);
+  fsSay(f.name+" removed. Power-cycle the pedal.");
+  await fsScan();
+}
+async function fsInstallIndexed(e){
+  const r=await fetch("../dist/"+encodeURIComponent(e.file),{cache:"no-store"});
+  if(!r.ok)throw new Error("Could not download "+e.file+".");
+  const data=Array.from(new Uint8Array(await r.arrayBuffer()));
+  const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new Uint8Array(data))),b=>b.toString(16).padStart(2,"0")).join("");
+  if(data.length!==e.bytes||hash!==e.sha256)throw new Error(e.file+" did not download intact (size or checksum differs).");
+  await fsInstall(e.file,data);
+}
+const fsRemoveIndexed=e=>fsRemove(e.file);
+function fsZip(entries){
+  const parts=[],central=[],enc=new TextEncoder();let offset=0;
+  const u16=v=>[v&255,v>>8&255],u32=v=>[v&255,v>>8&255,v>>16&255,v>>>24&255];
+  for(const {name,data} of entries){
+    const n=Array.from(enc.encode(name)),c=fsCrc(data),common=[...u16(20),...u16(0),...u16(0),...u16(0),...u16(0x21),...u32(c),...u32(data.length),...u32(data.length),...u16(n.length),...u16(0)];
+    const local=[0x50,0x4b,3,4,...common,...n];parts.push(new Uint8Array(local),new Uint8Array(data));
+    central.push(...[0x50,0x4b,1,2,...u16(20),...common,...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset),...n]);offset+=local.length+data.length;
+  }
+  parts.push(new Uint8Array(central),new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(entries.length),...u16(entries.length),...u32(central.length),...u32(offset),0,0]));
+  return new Blob(parts,{type:"application/zip"});
+}
+async function fsBackup(){
+  if(!midiOut){banner("Connect MIDI first.");return;}
+  const files=await fsList(),entries=[];
+  for(const [i,f] of files.entries()){
+    fsSay("Backing up "+(i+1)+" of "+files.length+": "+f.name);
+    const data=await fsRead(f.name);
+    if(data.length!==f.size)throw new Error(f.name+": read "+data.length+" bytes, the pedal lists "+f.size+". Nothing was saved.");
+    entries.push({name:"files/"+f.name,data});
+  }
+  const enc=new TextEncoder();
+  entries.push({name:"order.txt",data:Array.from(enc.encode(files.map(f=>f.name).join("\n")+"\n"))});
+  const stamp=new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+  const a=$("fxSave");a.href=URL.createObjectURL(fsZip(entries));a.download="pedal-backup-"+stamp+".zip";a.textContent="Save the backup";a.hidden=false;
+  fsListSaved=true;
+  fsSay("Backup ready: "+files.length+" files, every block checksum-checked. Save it.");
+}
+$("fxScan").onclick=midiAction(fsScan);
+$("fxBackup").onclick=midiAction(fsBackup);
+$("fxInstallFile").onclick=midiAction(async()=>{
+  const f=$("fxFile").files[0];if(!f){banner("Choose a .ZDL file first.");return;}
+  await fsLoadIndex();
+  await fsInstall(f.name,Array.from(new Uint8Array(await f.arrayBuffer())));
+});
+fsLoadIndex().then(fsRender).catch(()=>{});
+
 function setupNavigation(){
   const move=(id,to,parent=false)=>$(to).appendChild(parent?$(id).closest("label"):$(id));
   const toolbar=$("mainToolbar");
-  for(const [id,label,target] of [["openLibrary","Library","libraryDrawer"],["openSettings","⚙ Settings","settingsDrawer"]]){
+  for(const [id,label,target] of [["openLibrary","Library","libraryDrawer"],["openEffects","Effects","effectsDrawer"],["openSettings","⚙ Settings","settingsDrawer"]]){
     const b=document.createElement("button");b.id=id;b.textContent=label;b.setAttribute("aria-haspopup","dialog");b.setAttribute("aria-controls",target);
     b.onclick=()=>$(target).showModal();toolbar.appendChild(b);
   }
@@ -2883,7 +3188,7 @@ function setupNavigation(){
   for(const id of ["connect","connectionState","currentPatch","dspmeter","editStatus"])identity.appendChild($(id));
   const actions=document.createElement("div");actions.className="toolbar-actions";
   actions.appendChild(toolbar.querySelector('[aria-label="Pedal performance controls"]'));
-  for(const id of ["openLibrary","openSettings"])actions.appendChild($(id));
+  for(const id of ["openLibrary","openEffects","openSettings"])actions.appendChild($(id));
   toolbar.append(identity,actions);
   const selectLibrary=local=>{
     $("pedalPane").hidden=local;$("browserPane").hidden=!local;

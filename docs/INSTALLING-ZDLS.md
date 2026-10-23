@@ -1,5 +1,9 @@
 # Installing ZDLs With Zoom Effect Manager
 
+On an MS-70CDR you can also install them without Effect Manager: open the
+[Patch Editor](https://themanro.github.io/ZoomMultistompZDL/tools/patch_editor.html),
+connect, and use **Effects** (see the README).
+
 The release `.ZDL` files are in [../dist/](../dist/). Use
 [Zoom Effect Manager](https://zoomeffectmanager.com/en/download/) 2.3.3 or
 newer and point it at that folder.

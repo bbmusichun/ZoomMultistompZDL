@@ -6,6 +6,15 @@ dated. Effects in [dist/](dist/) carry their own version in the file
 
 ## Unreleased
 
+### Patch Editor
+- **Effects**: install, update and remove this project's effects over USB
+  on the MS-70CDR, without Zoom Effect Manager. It shows the version on the
+  pedal next to the one available, refuses Zoom's own effects and any name
+  or effect-ID clash, checks downloads against `dist/index.json` (written by
+  `build/dist_index.py`), reads back every write, writes the effect before
+  the effect list, and backs up all the pedal's files on request. Tested on
+  the owner's pedal (2026-10-23): remove, power-cycle, install, power-cycle.
+
 ### In dist/
 - **Loop 0.03**: with Long turned on while a loop is recorded, the screen
   now says **CLEAR** (Long is available once the looper is cleared) instead
