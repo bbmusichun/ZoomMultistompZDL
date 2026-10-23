@@ -111,8 +111,9 @@ draws on (MS-50G, MS-60B, MS-70CDR, G1on/G1Xon, B1on/B1Xon).
 
 Every install rewrites the whole file system, so an installer must have
 **every** file that stays on the pedal, Zoom's stock effects and `CMN_DRV.ZDL`
-included, and Effect Manager does not read them back from the pedal (no read
-command was seen). Zoom's files cannot be shipped with our tools.
+included. Effect Manager does not read them back from the pedal, but the
+pedal can give them back itself (section 5). Zoom's files cannot be shipped
+with our tools.
 
 They can come from Zoom's own updaters, which are free downloads on each
 pedal's support page. An updater's `FS.bin` holds that pedal's stock
@@ -133,6 +134,31 @@ updater, stripped; the owner's local stock copies; our `dist/`), with only
 `FLST_SEQ.ZDT` and four stock effects taken from the capture because no local
 source had them, gives Effect Manager's image byte for byte.
 
+## 5. The pedal's own file commands (normal mode)
+
+Effect Manager never uses them, but the MS-70CDR 2.10 answers the file
+commands that [zoom-zt2](https://github.com/mungewell/zoom-zt2) uses on the
+ZD2 pedals, with device id `0x61` in place of the G1Four's `0x6E`. Checked
+read-only on the owner's pedal, 23 October 2026, with `tools/file_probe.html`:
+
+| Command | Reply |
+| --- | --- |
+| `60 29 …` disk usage | Total and free bytes (7-bit groups): about 2.86 MB, 139 KB free |
+| `60 25 00 00 "*" 00`, then `60 26 …` | One file per reply (`60 04 25 …`): name at byte 14, size after it; all 162 files, in directory order; `60 03 7A 7F …` at the end |
+| `60 20 02` + 9 × `00` + name + `00` | Opens a file for reading |
+| `60 05 00`, `60 22 14 2F 60 00 0C 00 04 00 00 00`, `60 05 00` | One 512-byte block, in the reply to the second `60 05 00` (`60 04 22 01 …`: length, packed data, CRC32); length 0 at the end |
+| `60 21 40 00 00 00 00`, `60 09` | Close |
+
+`FLST_SEQ.ZDT` read this way (9 blocks, every CRC correct) is byte for byte
+the file Effect Manager wrote in the second capture. So a complete backup of
+the pedal's files over USB is possible, and stock effects can come from the
+pedal itself instead of the updaters.
+
+zoom-zt2 also writes (`60 24` delete, `60 20 01` open for writing, `60 23`
+blocks) and deletes single files on the ZD2 pedals. On this pedal that is
+untested. If it works, a per-effect install needs neither update mode nor a
+full reflash.
+
 ## Offline builder
 
 `tools/zoom_fs.py` reads an image (`list`, `extract`), an updater (`stock`, with `--strip`), and builds one from a
@@ -152,3 +178,8 @@ Zoom's updater. Before any write:
    reproduces Effect Manager's image byte for byte from the same inputs.
 2. The normal-mode read (section 1) as a read-only step in the Patch Editor.
 3. Only then a write, on the owner's pedal, with the stock updater ready.
+
+With the file commands (section 5) the order is: a full backup of the pedal's
+files, verified by rebuilding Effect Manager's image from it; a write test on
+a harmless new file (not an effect, not in the effect list), read back and
+deleted; then one of our own effects.
