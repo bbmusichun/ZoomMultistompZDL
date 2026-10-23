@@ -628,6 +628,7 @@ This repo builds loadable Zoom `.ZDL` effects without Zoom's unreleased SDK:
 | [build/decode_picture.py](build/decode_picture.py) | Decode any ZDL's on-device cover + knob-box layout back to pixels/PNG. |
 | [tools/cover_editor.html](tools/cover_editor.html) | Browser pixel editor for covers, with device-aspect preview. |
 | [tools/patch_editor.html](tools/patch_editor.html) | Web MIDI patch editor that sees **custom effects** (names/params extracted from the ZDLs; other editors only know stock). Serve the repo root over `http://localhost` and open it. |
+| [tools/editor.html](tools/editor.html) | The same editor in Modwerk's design ([open](https://themanro.github.io/ZoomMultistompZDL/tools/editor.html)): it loads `patch_editor.html` and runs it under its own layout and styles, so features and fixes land in both. In testing; the classic editor stays the default. |
 | [build/extract_effect_db.py](build/extract_effect_db.py) | Regenerate the patch editor's effect database from dist/ + stock ZDLs. |
 | [src/custom/](src/custom/) | Original effects. |
 | [src/airwindows/](src/airwindows/) | Airwindows-derived ports. |
