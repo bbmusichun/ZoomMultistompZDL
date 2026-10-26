@@ -22,6 +22,15 @@ dated. Effects in [dist/](dist/) carry their own version in the file
   missing from the pedal or newer than its copy, and installs only those:
   never an older version over a newer one, never in place of another effect.
   Not yet tested on a pedal.
+- **NAM captures** in Effects: choose a .nam and a short name, and the
+  capture is converted (the NAM loader's engine, Full rate or Eco) and
+  installed over USB in one step, as a new capture (the next unused slot ID,
+  picked for you) or in place of one already on the pedal, which is removed
+  first. Patches using that slot then play the new capture.
+  A DSP estimate shows the capture's share of the pedal (194 or 181 of
+  ~228), what still fits beside it, and whether it fits the open patch.
+  Captures and cabs on the pedal are listed with Remove. Eco+, split outputs
+  and cabs are still made in the NAM + Cab Loader. Not yet tested on a pedal.
 - **[editor.html](tools/editor.html)**: the Patch Editor in Modwerk's design,
   running the same code. In testing; the classic editor stays the default.
 
