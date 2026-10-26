@@ -27,6 +27,8 @@ dated. Effects in [dist/](dist/) carry their own version in the file
   installed over USB in one step, as a new capture (the next unused slot ID,
   picked for you) or in place of one already on the pedal, which is removed
   first. Patches using that slot then play the new capture.
+  Cabs the same way: choose a .wav IR and a name; it is fitted (the cab
+  loader's fit, in a worker) and installed as a new cab or in place of one.
   A DSP estimate shows the capture's share of the pedal (194 or 181 of
   ~228), what still fits beside it, and whether it fits the open patch.
   Captures and cabs on the pedal are listed with Remove. Eco+, split outputs

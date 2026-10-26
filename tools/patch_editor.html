@@ -558,8 +558,8 @@
   </div>
   <p id="fxStatus" class="hint" role="status" aria-live="polite">Connect, then read the pedal.</p>
   <div id="fxRows" role="table" aria-label="This project's effects"></div>
-  <details id="fxNamBox" open><summary>NAM captures</summary>
-    <p class="hint">Turn a NAM capture into an effect and install it in one step. It is converted in this browser by the same engine as the <a href="nam_loader.html" target="_blank" rel="noopener">NAM + Cab Loader ↗</a>, which also explains which captures work and makes Eco+, split-output and cab files. Patches remember a capture by its slot: whatever capture is in that slot plays in them.</p>
+  <details id="fxNamBox" open><summary>NAM captures and cabs</summary>
+    <p class="hint">Turn a NAM capture or a cab IR into an effect and install it in one step. It is made in this browser by the same engines as the <a href="nam_loader.html" target="_blank" rel="noopener">NAM + Cab Loader ↗</a>, which also explains which captures work and makes Eco+ and split-output captures. Patches remember a capture or cab by its slot: whatever is in that slot plays in them.</p>
     <div id="fxNamRows" role="table" aria-label="Captures and cabs on the pedal"></div>
     <div class="nam-form">
       <label>Capture (.nam)<input type="file" id="fxNamFile" accept=".nam,application/json"></label>
@@ -571,6 +571,13 @@
     <div class="nam-dsp"><span class="dspmeter" id="fxNamMeter" role="meter" aria-label="Estimated DSP use with this capture" aria-valuemin="0" aria-valuemax="228"><span class="bar"><i></i></span><span class="txt"></span></span><span id="fxNamDspText" class="hint"></span></div>
     <p id="fxNamStatus" class="hint" role="status" aria-live="polite">Choose a capture. The pedal shows it as NAM- plus the first 5 letters of the short name.</p>
     <a id="fxNamNotes" hidden></a>
+    <div class="nam-form">
+      <label>Cab IR (.wav)<input type="file" id="fxCabFile" accept=".wav,audio/wav,audio/x-wav"></label>
+      <label>Cab name<input type="text" id="fxCabName" maxlength="8" placeholder="greenback" autocomplete="off" spellcheck="false"></label>
+      <label>Install as<select id="fxCabSlot"></select></label>
+      <button id="fxCabInstall" type="button">Fit and install</button>
+    </div>
+    <p id="fxCabStatus" class="hint" role="status" aria-live="polite">Choose a cab IR: 44.1 or 48 kHz, mono or stereo, up to 2 s. It becomes its own CabIR effect (uses 10 of ~228), shown as CAB- plus the first 5 letters of the name.</p>
   </details>
   <details id="fxStockBox"><summary>Zoom's effects, from Zoom's updater</summary>
     <p class="hint">Put back Zoom's own effects without Effect Manager. Choose the firmware updater from Zoom: the <a href="https://zoomcorp.com/documents/94/MS-70CDR_v2.10_Mac_E.zip" rel="noopener">MS-70CDR 2.10 Mac updater (.zip)</a> (it works for this on any computer; don't unzip it), or FS.bin from it. Other versions are on Zoom's <a href="https://zoomcorp.com/en/us/multi-effects/multistomp-pedals/ms-70cdr/ms-70cdr-support/" target="_blank" rel="noopener">MS-70CDR support page ↗</a>. The effects are unpacked and prepared in this browser, the way Effect Manager installs them; nothing is uploaded. Only effects missing from the pedal, or newer than the pedal's copy, can be installed. Effect Manager's library can have newer versions than the updater.</p>
@@ -618,7 +625,7 @@
   <button id="openSupport" type="button" aria-haspopup="dialog" aria-controls="supportDialog" title="Support the ZoomMultistompZDL project"><span aria-hidden="true">♡</span> Support</button>
   <button id="clearNotice" aria-label="Clear notification" title="Clear notification">✕</button>
 </footer>
-<script src="cover_art.js"></script><script src="zdl_strip.js"></script><script src="slot_identity.js"></script><script src="nam_loader.js"></script>
+<script src="cover_art.js"></script><script src="zdl_strip.js"></script><script src="slot_identity.js"></script><script src="nam_loader.js"></script><script src="cab_loader.js"></script>
 <script>
 "use strict";
 /* ---------- patch codec (bit tables ported from g200kg/zoom-ms-utility, MIT) */
@@ -3184,16 +3191,17 @@ function fsCaptures(){
 }
 function fsRenderNam(){
   const rows=$("fxNamRows");rows.textContent="";
-  const caps=fsCaptures(),reg=NAMLoader.readRegistry(localStorage);
+  const caps=fsCaptures(),reg=NAMLoader.readRegistry(localStorage),bank=CabLoader.readCabs(localStorage);
   if(fsFiles&&caps.length){
     for(const h of ["On the pedal","Slot","Version",""]){const c=document.createElement("div");c.className="head";c.textContent=h;rows.appendChild(c);}
     for(const {f,nam,slot} of caps){
-      const e=nam&&reg.find(x=>x.slot===slot);
-      for(const t of [(e?"NAM-"+e.shortName+" · ":"")+f.name,(nam?"capture ":"cab ")+slot,f.info.version]){const c=document.createElement("div");c.textContent=t;rows.appendChild(c);}
+      const e=nam?reg.find(x=>x.slot===slot):bank.find(x=>x.slot===slot);
+      const shown=e?(nam?NAMLoader.pedalName(e.shortName):CabLoader.pedalName(e.name))+" · ":"";
+      for(const t of [shown+f.name,(nam?"capture ":"cab ")+slot,f.info.version]){const c=document.createElement("div");c.textContent=t;rows.appendChild(c);}
       const acts=document.createElement("div");acts.className="acts";const b=document.createElement("button");b.type="button";b.textContent="Remove";b.onclick=midiAction(()=>fsRemove(f.name));acts.appendChild(b);rows.appendChild(acts);
     }
   }
-  fsNamSlots();
+  fsNamSlots();fsCabSlots();
 }
 // Where the capture goes: a new slot (an unused ID, picked here) or in place of
 // a capture already on the pedal. Patches remember a capture by its slot's ID.
@@ -3215,6 +3223,71 @@ function fsNamSlots(){
   const mine=same&&caps.find(c=>c.slot===same.slot),pickedOk=picked&&!same&&[...sel.options].some(o=>o.value===picked);
   sel.value=mine?String(mine.slot):pickedOk?picked:String(fresh||(caps[0]||{}).slot||"");
   fsNamDsp();
+}
+// Cabs: the cab loader's fit and engine (cab_loader.js), installed the same way.
+// The loader's saved bank keeps slots 1-99, so new cabs stay within those.
+const CAB_SLOTS=99;
+let fsCab=null,cabWorker=null,cabJobs=new Map(),cabJob=0;   // fsCab: the fitted IR {file, cab}
+function cabFit(buffer){
+  if(cabWorker===null){try{cabWorker=new Worker("cab_worker.js");cabWorker.onmessage=({data})=>{const w=cabJobs.get(data.id);cabJobs.delete(data.id);if(w)data.ok?w.resolve(data.cab):w.reject(new Error(data.error));};}catch{cabWorker=false;}}
+  if(cabWorker===false)return Promise.resolve({...CabLoader.fit(CabLoader.prepare(CabLoader.parseWav(buffer)))});
+  const id=++cabJob;return new Promise((resolve,reject)=>{cabJobs.set(id,{resolve,reject});cabWorker.postMessage({id,buffer},[buffer]);});
+}
+const fsCabSay=t=>{$("fxCabStatus").textContent=t;};
+async function fsCabPick(){
+  fsCab=null;const f=$("fxCabFile").files[0];if(!f)return;
+  fsCabSay("Fitting "+f.name+": a few seconds…");$("fxCabInstall").disabled=true;
+  try{
+    const cab=await cabFit(await f.arrayBuffer());
+    if($("fxCabFile").files[0]!==f)return;   // another file was chosen meanwhile
+    fsCab={file:f.name,cab:{...cab,source:f.name}};
+    if(!$("fxCabName").value.trim())$("fxCabName").value=f.name.replace(/\.wav$/i,"").replace(/[^a-z0-9]/gi,"").slice(0,8).toLowerCase().replace(/^[0-9]+/,"")||"cab";
+    fsCabSlots();
+    fsCabSay(f.name+": fitted to "+cab.errorDb.toFixed(2)+" dB. Check the name, then install.");
+  }catch(e){fsCabSay(f.name+": "+e.message);}
+  finally{$("fxCabInstall").disabled=false;}
+}
+// As for captures: a new slot (an unused ID, picked here) or in place of a cab on the pedal.
+function fsCabSlots(){
+  const sel=$("fxCabSlot"),picked=sel.dataset.picked,bank=CabLoader.readCabs(localStorage);
+  const name=$("fxCabName").value.trim().toLowerCase(),same=name&&bank.find(c=>c.name.toLowerCase()===name);
+  const caps=fsFiles?fsCaptures().filter(c=>!c.nam).map(c=>({slot:c.slot,file:c.f.name,e:bank.find(x=>x.slot===c.slot)}))
+                    :bank.map(e=>({slot:e.slot,file:CabLoader.fileName(e.slot,e.name),e})).sort((a,b)=>a.slot-b.slot);
+  const used=new Set([...caps.map(c=>c.slot),...bank.map(e=>e.slot)]);
+  let fresh=same&&!caps.some(c=>c.slot===same.slot)?same.slot:0;
+  for(let slot=1;!fresh&&slot<=CAB_SLOTS;slot++)if(!used.has(slot))fresh=slot;
+  sel.textContent="";
+  const add=(value,text)=>{const o=document.createElement("option");o.value=value;o.textContent=text;sel.appendChild(o);};
+  if(fresh)add(fresh,"New cab (slot "+fresh+")");
+  for(const c of caps)add(c.slot,"Replace "+(c.e?CabLoader.pedalName(c.e.name)+" · ":"")+c.file+" (slot "+c.slot+")");
+  const mine=same&&caps.find(c=>c.slot===same.slot),pickedOk=picked&&!same&&[...sel.options].some(o=>o.value===picked);
+  sel.value=mine?String(mine.slot):pickedOk?picked:String(fresh||(caps[0]||{}).slot||"");
+}
+async function fsCabInstall(){
+  fsCanWrite();
+  if(!fsCab)throw new Error("Choose a cab IR (.wav) first.");
+  const slot=Number($("fxCabSlot").value),name=CabLoader.cabName($("fxCabName").value.trim()),bank=CabLoader.readCabs(localStorage);
+  if(!slot)throw new Error("No cab slot is free. Replace a cab, or remove one first.");
+  const other=bank.find(c=>c.slot!==slot&&c.name.toLowerCase()===name.toLowerCase());
+  if(other)throw new Error("The cab name "+name+" already belongs to cab slot "+other.slot+". Choose another name, or replace that cab.");
+  const clash=bank.find(c=>c.slot!==slot&&CabLoader.pedalName(c.name).toLowerCase()===CabLoader.pedalName(name).toLowerCase());
+  if(clash)throw new Error("Cab slot "+clash.slot+" already shows as "+CabLoader.pedalName(name)+" on the pedal. Change the first 5 letters.");
+  if(!fsFiles)await fsScan();
+  const mr=await fetch("cab_template/cab.json",{cache:"no-store"});if(!mr.ok)throw new Error("The cab engine files are unavailable.");
+  const manifest=await mr.json(),meta=SlotIdentity.slotMeta(manifest,slot),tr=await fetch("cab_template/"+meta.file,{cache:"no-store"});
+  if(!tr.ok)throw new Error("The cab engine files are unavailable.");
+  const result=await CabLoader.fillCab(await tr.arrayBuffer(),manifest,slot,fsCab.cab,name,null);
+  const file=result.report.filename;
+  const old=fsCaptures().find(c=>!c.nam&&c.slot===slot&&c.f.name.toUpperCase()!==file.toUpperCase());
+  const what=file+" ("+CabLoader.pedalName(name)+", cab slot "+slot+", "+result.bytes.length+" bytes)";
+  if(!confirm((old?"Replace "+old.f.name+" with "+what+"? "+old.f.name+" is removed first; patches using cab slot "+slot+" will play the new cab.":"Install "+what+"?")+" The current effect list is offered for saving first: save it. Don't touch the pedal or the cable.")){fsCabSay("Not installed: nothing was written to the pedal.");return;}
+  if(old&&!await fsRemove(old.f.name,{confirmed:true}))return;
+  fsCabSay("Installing "+file+"…");
+  if(!await fsInstall(file,Array.from(result.bytes),{confirmed:true}))return;
+  CabLoader.saveCabs(localStorage,[...bank.filter(c=>c.slot!==slot),{...fsCab.cab,slot,name,icon:null}]);
+  if(syncNamCaptureNames())render();
+  fsRenderNam();
+  fsCabSay(file+" installed in cab slot "+slot+" and read back identical. Power-cycle the pedal; it shows as "+CabLoader.pedalName(name)+".");
 }
 // DSP estimate for the capture being made: its declared cost (the engine
 // manifests' dsp_cost) against the pedal's budget, alone and in the open patch.
@@ -3364,6 +3437,10 @@ $("fxNamName").onchange=()=>{fsNamSlots();fsNamDsp();};
 $("fxNamRate").onchange=fsNamDsp;
 $("fxNamSlot").onchange=()=>{$("fxNamSlot").dataset.picked=$("fxNamSlot").value;fsNamDsp();};
 $("fxNamInstall").onclick=midiAction(fsNamInstall);
+$("fxCabFile").onchange=fsCabPick;
+$("fxCabName").onchange=fsCabSlots;
+$("fxCabSlot").onchange=()=>{$("fxCabSlot").dataset.picked=$("fxCabSlot").value;};
+$("fxCabInstall").onclick=midiAction(fsCabInstall);
 fsRenderNam();
 $("fxInstallFile").onclick=midiAction(async()=>{
   const f=$("fxFile").files[0];if(!f){banner("Choose a .ZDL file first.");return;}
