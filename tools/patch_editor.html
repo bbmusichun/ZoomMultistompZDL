@@ -404,6 +404,18 @@
   #fxRows .head,#fxStockRows .head,#fxNamRows .head{font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:1px}
   #fxRows .acts,#fxStockRows .acts,#fxNamRows .acts{display:flex;gap:6px;justify-content:flex-end} #fxRows button,#fxStockRows button,#fxNamRows button{min-height:32px}
   .nam-dsp{display:flex;gap:10px;align-items:center;margin:4px 0 8px} .nam-dsp .dspmeter{margin-left:0} .nam-dsp .dspmeter .bar{display:block;padding:0;margin:0;height:9px;flex:none}
+  .t3k-pick{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-end;margin:0 0 8px} .t3k-pick label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+  details.info{display:inline;font-weight:400} details.info>summary{display:inline;cursor:pointer;list-style:none;opacity:.6;font-size:13px} details.info>summary::-webkit-details-marker{display:none} details.info[open]>p{font-size:13px;margin:6px 0 0;max-width:60ch;opacity:.85}
+  .nam-links{display:flex;gap:16px}
+  .variant-bar{display:flex;align-items:center;gap:6px;margin:4px 0} .variant-bar button{min-height:26px;padding:0 8px} .variant-label{flex:1;text-align:center;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .src-row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:8px 0} .src-row .or{opacity:.6;font-size:13px}
+  .ident-row{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-start;margin:8px 0}
+  .ident-fields{display:flex;flex-direction:column;gap:10px} .ident-fields label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+  .lcd-preview{width:192px;height:auto;image-rendering:pixelated;border-radius:4px}
+  .t3k-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;margin:6px 0 4px} .t3k-brand{flex-basis:100%} .t3k-logo{height:20px;display:block}
+  .t3k-btn{display:inline-flex;align-items:center;gap:8px} .t3k-mark{height:14px}
+  .t3k-pick{align-items:center} .pack{flex-basis:100%;display:flex;flex-direction:column;gap:4px} .pack-head{display:flex;gap:10px;align-items:center;font-size:13px} .pack-row{display:flex;gap:8px;align-items:center;font-size:13px} .pack-row .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .pack-row input[type=text]{width:9ch} .t3k-art{width:40px;height:40px;object-fit:cover;border-radius:4px} .t3k-credit{display:flex;flex-direction:column;gap:2px;font-size:13px} .t3k-credit .by{display:inline-flex;align-items:center;gap:5px;opacity:.8} .t3k-avatar{width:16px;height:16px;border-radius:50%} .t3k-pick label[hidden]{display:none} .t3k-row label{display:flex;flex-direction:column;gap:4px;font-size:13px} .t3k-row label[hidden]{display:none} .t3k-row strong{align-self:center}
+  .nam-form label[hidden]{display:none}
   .nam-form{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:10px 0} .nam-form label{display:flex;flex-direction:column;gap:4px;font-size:13px}
   #fxStatus{margin:6px 0}
   .drawer .bar{padding:12px 0;flex-wrap:wrap} .drawer details{border-top:1px solid var(--ink-soft);padding:18px 0}
@@ -544,7 +556,6 @@
   <div class="drawer-head"><h2 id="settingsTitle">Settings</h2><button type="button" data-close="settingsDrawer" aria-label="Close settings">✕</button></div>
   <details open><summary>Appearance</summary><div id="appearanceTools" class="bar"></div></details>
   <details><summary>MIDI controller</summary><p class="hint">Use an external controller to move knobs and select effect slots.</p><div id="controllerTools" class="bar"></div></details>
-  <details><summary>Custom NAM captures</summary><p class="hint">Convert a compatible capture, then install it with Effects (MS-70CDR) or Effect Manager.</p><a href="nam_loader.html" target="_blank" rel="noopener">Open NAM Loader ↗</a></details>
   <details><summary>Advanced</summary><div id="advancedTools" class="bar"></div><h3>Pedal bank backup</h3><p class="hint">Back up before replacing stored patches. Restore overwrites pedal memory.</p><div id="bankTools" class="bar"></div></details>
   <details id="diagnosticsSection"><summary>Diagnostics</summary><p class="hint">Troubleshooting and recovery tools. Blind writes replace the whole edit buffer.</p><label><input type="checkbox" id="showProbes"> Show diagnostic probes in effect lists</label><button id="directEditTrial" title="Temporary test for the current session: sends live parameter messages to slots 4–6 without automatic patch writes or bypass toggles. Judge the audio, not only the displayed values.">Test direct edits in slots 4–6</button><div id="diagnosticTools" class="bar"></div><details><summary>Developer diagnostics</summary><p class="hint">Protocol experiments for development. Tests can change audible settings and the pedal may auto-save them.</p><div id="developerTools"></div></details></details>
 </dialog>
@@ -558,27 +569,6 @@
   </div>
   <p id="fxStatus" class="hint" role="status" aria-live="polite">Connect, then read the pedal.</p>
   <div id="fxRows" role="table" aria-label="This project's effects"></div>
-  <details id="fxNamBox" open><summary>NAM captures and cabs</summary>
-    <p class="hint">Turn a NAM capture or a cab IR into an effect and install it in one step. It is made in this browser by the same engines as the <a href="nam_loader.html" target="_blank" rel="noopener">NAM + Cab Loader ↗</a>, which also explains which captures work and makes Eco+ and split-output captures. Patches remember a capture or cab by its slot: whatever is in that slot plays in them.</p>
-    <div id="fxNamRows" role="table" aria-label="Captures and cabs on the pedal"></div>
-    <div class="nam-form">
-      <label>Capture (.nam)<input type="file" id="fxNamFile" accept=".nam,application/json"></label>
-      <label>Short name<input type="text" id="fxNamName" maxlength="8" placeholder="smokey" autocomplete="off" spellcheck="false"></label>
-      <label>Install as<select id="fxNamSlot"></select></label>
-      <label>DSP<select id="fxNamRate"><option value="full">Full rate (uses 194)</option><option value="eco">Eco (181, a little less treble)</option></select></label>
-      <button id="fxNamInstall" type="button">Convert and install</button>
-    </div>
-    <div class="nam-dsp"><span class="dspmeter" id="fxNamMeter" role="meter" aria-label="Estimated DSP use with this capture" aria-valuemin="0" aria-valuemax="228"><span class="bar"><i></i></span><span class="txt"></span></span><span id="fxNamDspText" class="hint"></span></div>
-    <p id="fxNamStatus" class="hint" role="status" aria-live="polite">Choose a capture. The pedal shows it as NAM- plus the first 5 letters of the short name.</p>
-    <a id="fxNamNotes" hidden></a>
-    <div class="nam-form">
-      <label>Cab IR (.wav)<input type="file" id="fxCabFile" accept=".wav,audio/wav,audio/x-wav"></label>
-      <label>Cab name<input type="text" id="fxCabName" maxlength="8" placeholder="greenback" autocomplete="off" spellcheck="false"></label>
-      <label>Install as<select id="fxCabSlot"></select></label>
-      <button id="fxCabInstall" type="button">Fit and install</button>
-    </div>
-    <p id="fxCabStatus" class="hint" role="status" aria-live="polite">Choose a cab IR: 44.1 or 48 kHz, mono or stereo, up to 2 s. It becomes its own CabIR effect (uses 10 of ~228), shown as CAB- plus the first 5 letters of the name.</p>
-  </details>
   <details id="fxStockBox"><summary>Zoom's effects, from Zoom's updater</summary>
     <p class="hint">Put back Zoom's own effects without Effect Manager. Choose the firmware updater from Zoom: the <a href="https://zoomcorp.com/documents/94/MS-70CDR_v2.10_Mac_E.zip" rel="noopener">MS-70CDR 2.10 Mac updater (.zip)</a> (it works for this on any computer; don't unzip it), or FS.bin from it. Other versions are on Zoom's <a href="https://zoomcorp.com/en/us/multi-effects/multistomp-pedals/ms-70cdr/ms-70cdr-support/" target="_blank" rel="noopener">MS-70CDR support page ↗</a>. The effects are unpacked and prepared in this browser, the way Effect Manager installs them; nothing is uploaded. Only effects missing from the pedal, or newer than the pedal's copy, can be installed. Effect Manager's library can have newer versions than the updater.</p>
     <div class="bar"><input type="file" id="fxUpdater" accept=".zip,.bin" aria-label="Choose Zoom's updater (.zip) or its FS.bin"><button id="fxReadUpdater" type="button">Read it</button></div>
@@ -589,6 +579,71 @@
     <p class="hint">For files made by the NAM and cab loaders (NAM… and C… files). Other files are refused.</p>
     <div class="bar"><input type="file" id="fxFile" accept=".ZDL,.zdl" aria-label="Choose a .ZDL file"><button id="fxInstallFile" type="button">Install it</button></div>
   </details>
+</dialog>
+<dialog id="namCabDrawer" class="drawer" aria-labelledby="namCabTitle">
+  <div class="drawer-head"><h2 id="namCabTitle">NAM / Cab</h2><button type="button" data-close="namCabDrawer" aria-label="Close NAM and cab">✕</button></div>
+  <div id="fxNamBox">
+    <div id="fxNamRows" role="table" aria-label="Captures and cabs on the pedal"></div>
+    <div class="t3k-row">
+      <div class="t3k-brand"><img src="t3k_logo.svg" alt="TONE3000" class="t3k-logo"></div>
+      <button id="t3kSignIn" type="button">Sign in</button>
+      <label id="t3kFavWrap" hidden>Your favourites<select id="t3kFav"></select></label>
+      <label id="t3kLinkWrap" hidden>or a link<input type="text" id="t3kLink" placeholder="tone3000.com/tones/…" autocomplete="off" spellcheck="false"></label>
+      <button id="t3kLoadBtn" type="button" hidden>Load</button>
+      <button id="t3kSignOut" type="button" class="link" hidden>Sign out</button>
+      <span id="t3kStatus" class="hint" role="status" aria-live="polite"></span>
+    </div>
+    <h3>Amp captures <details class="info"><summary aria-label="About amp captures">ⓘ</summary><p>A .nam capture becomes its own effect, converted in this browser and installed over USB (MS-70CDR). A2 Lite captures only. The pedal shows it as NAM- plus the first 5 letters of the short name. Replacing a capture keeps its slot, so patches that used it play the new one.</p></details></h3>
+    <div class="src-row">
+      <button id="fxNamT3k" type="button" class="primary t3k-btn" title="Browse TONE3000 and load a capture straight into this page"><img src="t3k_mark.svg" alt="" class="t3k-mark">Choose from TONE3000</button>
+      <span class="or">or</span>
+      <button id="fxNamFileBtn" type="button">Choose a file</button>
+      <input type="file" id="fxNamFile" accept=".nam,application/json" multiple hidden>
+    </div>
+    <div id="fxNamT3kPick" class="t3k-pick" hidden><img id="fxNamT3kArt" class="t3k-art" alt=""><span id="fxNamT3kCredit" class="t3k-credit"></span><label>Model<select id="fxNamT3kModel"></select></label><div id="fxNamPack" class="pack" hidden></div></div>
+    <p id="fxNamStatus" class="hint" role="status" aria-live="polite"></p>
+    <div id="fxNamNext" hidden>
+      <div class="ident-row">
+        <canvas id="fxNamPreview" class="lcd-preview" width="256" height="180" role="img" aria-label="How the pedal's screen will show it"></canvas>
+        <div class="ident-fields">
+          <label>Name<input type="text" id="fxNamName" maxlength="8" placeholder="smokey" autocomplete="off" spellcheck="false" title="Up to 8 letters or numbers, starting with a letter. The pedal shows NAM- plus the first 5."></label>
+          <label id="fxNamCodeWrap" hidden>Pack code<input type="text" id="fxNamCode" maxlength="4" autocomplete="off" spellcheck="false" title="Starts every name in the pack, so its captures sit together on the pedal"></label>
+          <label>Icon<select id="fxNamIcon"></select></label>
+        </div>
+      </div>
+      <div class="nam-form">
+        <label>Replace<select id="fxNamSlot" title="Add the capture as a new one, or put it in place of a capture on the pedal"></select></label>
+        <label>DSP<select id="fxNamRate"><option value="full">Full rate</option><option value="eco" title="181 instead of 194; a little less treble">Eco</option></select></label>
+        <button id="fxNamInstall" type="button" class="primary">Convert and install</button>
+      </div>
+      <div class="nam-dsp"><span class="dspmeter" id="fxNamMeter" role="meter" aria-label="Estimated DSP use with this capture" aria-valuemin="0" aria-valuemax="228"><span class="bar"><i></i></span><span class="txt"></span></span><span id="fxNamDspText" class="hint"></span></div>
+    </div>
+    <a id="fxNamNotes" hidden></a>
+    <h3>Cabs <details class="info"><summary aria-label="About cabs">ⓘ</summary><p>A cab IR (.wav, 44.1 or 48 kHz, up to 2 s) is fitted into its own CabIR effect, using 10 of ~228 DSP. The pedal shows it as CAB- plus the first 5 letters of the name.</p></details></h3>
+    <div class="src-row">
+      <button id="fxCabT3k" type="button" class="primary t3k-btn" title="Browse TONE3000 and load a cab IR straight into this page"><img src="t3k_mark.svg" alt="" class="t3k-mark">Choose from TONE3000</button>
+      <span class="or">or</span>
+      <button id="fxCabFileBtn" type="button">Choose a file</button>
+      <input type="file" id="fxCabFile" accept=".wav,audio/wav,audio/x-wav" multiple hidden>
+    </div>
+    <div id="fxCabT3kPick" class="t3k-pick" hidden><img id="fxCabT3kArt" class="t3k-art" alt=""><span id="fxCabT3kCredit" class="t3k-credit"></span><label>IR<select id="fxCabT3kModel"></select></label><div id="fxCabPack" class="pack" hidden></div></div>
+    <p id="fxCabStatus" class="hint" role="status" aria-live="polite"></p>
+    <div id="fxCabNext" hidden>
+      <div class="ident-row">
+        <canvas id="fxCabPreview" class="lcd-preview" width="256" height="180" role="img" aria-label="How the pedal's screen will show it"></canvas>
+        <div class="ident-fields">
+          <label>Name<input type="text" id="fxCabName" maxlength="8" placeholder="greenback" autocomplete="off" spellcheck="false" title="Up to 8 letters or numbers, starting with a letter. The pedal shows CAB- plus the first 5."></label>
+          <label id="fxCabCodeWrap" hidden>Pack code<input type="text" id="fxCabCode" maxlength="4" autocomplete="off" spellcheck="false" title="Starts every name in the pack, so its cabs sit together on the pedal"></label>
+          <label>Icon<select id="fxCabIcon"></select></label>
+        </div>
+      </div>
+      <div class="nam-form">
+        <label>Replace<select id="fxCabSlot" title="Add the cab as a new one, or put it in place of a cab on the pedal"></select></label>
+        <button id="fxCabInstall" type="button" class="primary">Fit and install</button>
+      </div>
+    </div>
+    <p class="hint nam-links"><a href="https://www.tone3000.com" target="_blank" rel="noopener">Browse TONE3000 ↗</a> <a href="nam_loader.html" target="_blank" rel="noopener" title="The NAM + Cab Loader: files for Effect Manager or another pedal, Eco+ and split-output captures">Make files instead ↗</a></p>
+  </div>
 </dialog>
 <dialog id="patchPasteDialog" aria-labelledby="patchPasteTitle">
   <form method="dialog">
@@ -803,6 +858,9 @@ let DEVID=0x61;                         // MS-70CDR
 // exactly the data needed to find out whether a model is compatible at all, so
 // an unknown pedal becomes READ-ONLY rather than unusable.
 let READ_ONLY=false;
+// What the pedal said it is, from its identity reply ({id, model, fw}); null until it answers, and after unplugging.
+let PEDAL_ID=null;
+const PEDAL_MODELS={0x61:"MS-70CDR",0x58:"MS-50G",0x5f:"MS-60B"};
 // Siblings that answer with the MS-70CDR's 146-byte patch dump. A user's MS-50G
 // dump (issue #1) decodes cleanly with these tables -- name, all effects, every
 // value in range -- so writes are offered on them, opt-in, behind a round-trip
@@ -852,7 +910,8 @@ async function waitIdle(ms){
 function updateEditorHeading(){
   if(!$("currentPatch"))return;
   const connected=!!midiOut&&midiOut.state!=="disconnected";
-  $("connectionState").textContent=connected?"● Connected":"○ Offline";
+  // The model and firmware go in the pill, unless a page around the editor shows them itself (editor.html sets MW_SHELL).
+  $("connectionState").textContent=!connected?"○ Offline":PEDAL_ID&&!window.MW_SHELL?"● "+PEDAL_ID.model+(PEDAL_ID.fw?" · "+PEDAL_ID.fw:""):"● Connected";
   $("currentPatch").textContent=patch?((connected?String(curProg+1).padStart(2,"0")+" · ":"")+(patch.name||"Untitled")):"No patch loaded";
   $("editStatus").textContent=hasLocalEdits&&editPatchGeneration===patchGeneration?"Unsaved changes":"";
   if($("emptyEditor"))$("emptyEditor").hidden=!!patch;
@@ -1013,11 +1072,11 @@ async function connect(){
     // automatically when the device comes back.
     acc.onstatechange=ev=>{
       const p=ev.port;
-      if(p===midiIn || p===midiOut){if(p.state==="disconnected"){actionCancelled=true;cancelDump();}updateActionState();}
+      if(p===midiIn || p===midiOut){if(p.state==="disconnected"){actionCancelled=true;cancelDump();PEDAL_ID=null;}updateActionState();}
       log("MIDI "+p.type+" \""+p.name+"\" -> "+p.state+"/"+p.connection);
       if(p.state==="connected"&&/zoom ms/i.test(p.name)){
         if(p.type==="input"){ midiIn=p; midiIn.onmidimessage=onMidi; log("re-bound IN to "+p.name); }
-        else if(p.type==="output"){ midiOut=p; log("re-bound OUT to "+p.name); }
+        else if(p.type==="output"){ midiOut=p; log("re-bound OUT to "+p.name); send([0xf0,0x7e,0x00,0x06,0x01,0xf7]); }   // ask again who it is
       }
     };
     $("devname").textContent=`${inp.name} ⇄ ${out.name}`;
@@ -1161,6 +1220,10 @@ function handleSysex(m){
     log("bad dump ("+m.length+"B, expected 146) — ignored","warn");   // reject misaligned
   }else if(m[1]===0x7e){
     log("identity: "+hex(m));
+    if(m.length>=7&&m[5]===0x52){
+      const fw=m.length>=14?String.fromCharCode(...m.slice(10,14)).replace(/[^ -~]/g,"").trim():"";
+      PEDAL_ID={id:m[6],model:PEDAL_MODELS[m[6]]||"Zoom 0x"+m[6].toString(16),fw};updateEditorHeading();
+    }
     // Check the model rather than just printing it. Every byte offset in this
     // editor's bit tables was reverse-engineered on an MS-70CDR (device 0x61);
     // a sibling MS pedal can answer on the same port with a different patch
@@ -2279,6 +2342,56 @@ function dspMeter(){
   m.title=`Estimated DSP: ${sum.toFixed(0)} of ~${DSP_BUDGET} (declared costs; bypassed slots count).\n`+
     (pct>100?"Over budget: the pedal will say DSP Full.\n":pct>=80?"Close to the limit: one more effect may not fit.\n":"")+parts.join("\n");
 }
+// Put effect `ne` in slot `s` and write the patch to the pedal's edit buffer.
+// keepParams: a variant of the same capture or cab (same engine, same knobs)
+// keeps the slot's knob values and on/off.
+async function setSlotEffect(s,ne,{keepParams=false}={}){
+  const f=patch.fx[s];
+  f[1]=ne?ne.id:0;
+  if(!keepParams){for(let k=0;k<9;k++)f[k+2]=ne&&ne.params[k]?ne.params[k].default:0;f[0]=ne?1:0;}
+  for(let k=0;k<11;k++) markDirty(s,k);
+  render();
+  // Effect-TYPE change: write the whole patch to the edit buffer, then
+  // materialise. The pedal may not always reload a changed effect type over
+  // SysEx — if it doesn't switch, change the effect on the pedal itself.
+  send(zx([0x50])); lastEnable=performance.now(); editModeActive=true;
+  await sleep(20);
+  sendFullPatch();
+  await sleep(60);
+  await materialize();
+  log("wrote patch to buffer — effect set to "+(ne?ne.name:"empty"));
+  const nid=f[1]>>>0;
+  if(nid && !seenOnPedal.has(nid) && library.filter(Boolean).length>0){
+    log(`"${ne?ne.name:"?"}" has not appeared in any patch on this pedal. The list `
+       +`here is the full catalogue from every MS/G1/B1 model, not what is `
+       +`installed on YOUR unit — if Effect Manager has not written it, the slot `
+       +`will come back empty. Reload bank first if you are unsure.`,"warn");
+    banner(`"${ne?ne.name:"?"}" may not be installed on this pedal. `
+          +`Effects are installed with Zoom Effect Manager; this editor only `
+          +`references them.`);
+  }
+}
+// Variants: the slot's pack mates (packs made in NAM / Cab), in variant order;
+// once the pedal has been read, only those installed on it.
+function variantSiblings(e){
+  const nam=!!e.namSlot,slot=nam?e.namSlot:e.cabSlot;if(!slot)return null;
+  const recs=nam?NAMLoader.readRegistry(localStorage):CabLoader.readCabs(localStorage);
+  const me=recs.find(r=>r.slot===slot);if(!me||!me.pack)return null;
+  let mates=recs.filter(r=>r.pack&&r.pack.key===me.pack.key);
+  try{if(fsFiles){const on=new Set(fsCaptures().filter(c=>c.nam===nam).map(c=>c.slot));mates=mates.filter(r=>on.has(r.slot)||r.slot===slot);}}catch{}
+  mates.sort((a,b)=>String(a.variant||"").localeCompare(String(b.variant||""),undefined,{numeric:true,sensitivity:"base"}));
+  const list=mates.map(r=>({rec:r,e:DB.custom.find(d=>(nam?d.namSlot:d.cabSlot)===r.slot)})).filter(x=>x.e);
+  return {pack:me.pack,list,at:list.findIndex(x=>x.rec.slot===slot)};
+}
+function variantBar(s,vs){
+  const bar=document.createElement("div");bar.className="variant-bar";
+  const go=d=>midiAction(()=>setSlotEffect(s,vs.list[(vs.at+d+vs.list.length)%vs.list.length].e,{keepParams:true}));
+  const mk=(t,d,tip)=>{const b=document.createElement("button");b.type="button";b.textContent=t;b.title=tip;b.setAttribute("aria-label",tip);b.onclick=go(d);return b;};
+  const r=vs.list[vs.at].rec,lab=document.createElement("span");lab.className="variant-label";
+  lab.textContent=(r.shortName||r.name)+" · "+(vs.at+1)+"/"+vs.list.length;lab.title=vs.pack.title+(r.variant?": "+r.variant:"");
+  bar.append(mk("◀",-1,"Previous variant of "+vs.pack.title),lab,mk("▶",1,"Next variant of "+vs.pack.title));
+  return bar;
+}
 function render(){
   updateActionState();
   if(!patch)return;
@@ -2321,34 +2434,10 @@ function render(){
     const sel=document.createElement("select");
     sel.setAttribute("aria-label",`Slot ${s+1} effect`);
     effectOptions(sel, e && !(DB.probes||[]).some(p=>p.id===eid)?0:eid, eid); sel.value=eid;
-    sel.onchange=midiAction(async()=>{
-      const ne=BYID[+sel.value];
-      f[1]=+sel.value;
-      for(let k=0;k<9;k++)f[k+2]=ne&&ne.params[k]?ne.params[k].default:0;
-      f[0]=ne?1:0;
-      for(let k=0;k<11;k++) markDirty(s,k);
-      render();
-      // Effect-TYPE change: write the whole patch to the edit buffer, then
-      // materialise. The pedal may not always reload a changed effect type over
-      // SysEx — if it doesn't switch, change the effect on the pedal itself.
-      send(zx([0x50])); lastEnable=performance.now(); editModeActive=true;
-      await sleep(20);
-      sendFullPatch();
-      await sleep(60);
-      await materialize();
-      log("wrote patch to buffer — effect set to "+(ne?ne.name:"empty"));
-      const nid=f[1]>>>0;
-      if(nid && !seenOnPedal.has(nid) && library.filter(Boolean).length>0){
-        log(`"${ne?ne.name:"?"}" has not appeared in any patch on this pedal. The list `
-           +`here is the full catalogue from every MS/G1/B1 model, not what is `
-           +`installed on YOUR unit — if Effect Manager has not written it, the slot `
-           +`will come back empty. Reload bank first if you are unsure.`,"warn");
-        banner(`"${ne?ne.name:"?"}" may not be installed on this pedal. `
-              +`Effects are installed with Zoom Effect Manager; this editor only `
-              +`references them.`);
-      }
-    });
+    sel.onchange=midiAction(()=>setSlotEffect(s,BYID[+sel.value]));
     div.appendChild(sel);
+    const vs=e&&(e.namSlot||e.cabSlot)&&variantSiblings(e);
+    if(vs&&vs.list.length>1&&vs.at>=0)div.appendChild(variantBar(s,vs));
     if(eid){
       const cv=document.createElement("canvas");
       cv.className="cover"; cv.width=128; cv.height=64;
@@ -3107,7 +3196,7 @@ async function fsKeepList(){
 // stock: one of Zoom's effects from Zoom's updater (fsReadUpdater); it may be
 // added, or replace an older copy of itself, never anything else. confirmed:
 // the caller already asked. Returns true once the pedal holds this file.
-async function fsInstall(name,data,{stock=false,confirmed=false}={}){
+async function fsInstall(name,data,{stock=false,confirmed=false,rescan=true}={}){
   fsCanWrite();
   const info=fsInfo(data);
   if(!info)throw new Error(name+" is not an effect file.");
@@ -3147,8 +3236,9 @@ async function fsInstall(name,data,{stock=false,confirmed=false}={}){
       throw new Error(err.message+" The original effect list was written back.");
     }
     fsSay(file+" installed and read back identical. Power-cycle the pedal, then find it in its category.");
+    if(!rescan)fsFiles.files.push({name:file,size:data.length,info});
   }
-  await fsScan();
+  if(rescan)await fsScan();
   return true;
 }
 async function fsRemove(name,{confirmed=false}={}){
@@ -3217,8 +3307,9 @@ function fsNamSlots(){
   for(let slot=1;!fresh&&slot<=NAMLoader.NAM_SLOTS;slot++)if(!used.has(slot))fresh=slot;
   sel.textContent="";
   const add=(value,text)=>{const o=document.createElement("option");o.value=value;o.textContent=text;sel.appendChild(o);};
-  if(fresh)add(fresh,"New capture (slot "+fresh+")");
-  for(const c of caps)add(c.slot,"Replace "+(c.e?NAMLoader.pedalName(c.e.shortName)+" · ":"")+c.file+" (slot "+c.slot+")");
+  if(fresh)add(fresh,"Nothing, add as new");
+  for(const c of caps)add(c.slot,(c.e?NAMLoader.pedalName(c.e.shortName)+" · ":"")+c.file);
+  sel.closest("label").hidden=sel.options.length<2||!!fsPacks.nam;   // nothing to replace (or a pack: always new)
   // The capture with this name if it's installed; else what was picked here; else a new slot.
   const mine=same&&caps.find(c=>c.slot===same.slot),pickedOk=picked&&!same&&[...sel.options].some(o=>o.value===picked);
   sel.value=mine?String(mine.slot):pickedOk?picked:String(fresh||(caps[0]||{}).slot||"");
@@ -3235,17 +3326,29 @@ function cabFit(buffer){
 }
 const fsCabSay=t=>{$("fxCabStatus").textContent=t;};
 async function fsCabPick(){
-  fsCab=null;const f=$("fxCabFile").files[0];if(!f)return;
-  fsCabSay("Fitting "+f.name+": a few seconds…");$("fxCabInstall").disabled=true;
+  const files=[...$("fxCabFile").files];if(!files.length)return;
+  if(files.length>1){fsPackFiles("cab",files);return;}
+  const f=files[0];fsPackEnd("cab");
+  $("fxCabT3kPick").hidden=true;
+  await fsCabUse(f.name,await f.arrayBuffer());
+}
+let cabUse=0;   // the latest IR asked for; an older fit finishing late is dropped
+// A cab IR to fit and install, from a file or from TONE3000 (as fsNamUse).
+async function fsCabUse(file,buffer,{t3k=null,suggest=""}={}){
+  const me=++cabUse;fsCab=null;
+  fsCabSay("Fitting "+file+": a few seconds…");$("fxCabInstall").disabled=true;
   try{
-    const cab=await cabFit(await f.arrayBuffer());
-    if($("fxCabFile").files[0]!==f)return;   // another file was chosen meanwhile
-    fsCab={file:f.name,cab:{...cab,source:f.name}};
-    if(!$("fxCabName").value.trim())$("fxCabName").value=f.name.replace(/\.wav$/i,"").replace(/[^a-z0-9]/gi,"").slice(0,8).toLowerCase().replace(/^[0-9]+/,"")||"cab";
+    const cab=await cabFit(buffer);
+    if(me!==cabUse)return;
+    fsCab={file,cab:{...cab,source:file,...(t3k?{tone3000:t3k}:{})}};$("fxCabNext").hidden=false;
+    const from=v=>String(v||"").replace(/\.wav$/i,"").replace(/[^a-z0-9]/gi,"").slice(0,8).toLowerCase().replace(/^[0-9]+/,"");
+    if(suggest||!$("fxCabName").value.trim())$("fxCabName").value=from(suggest)||from(file)||"cab";
     fsCabSlots();
-    fsCabSay(f.name+": fitted to "+cab.errorDb.toFixed(2)+" dB. Check the name, then install.");
-  }catch(e){fsCabSay(f.name+": "+e.message);}
-  finally{$("fxCabInstall").disabled=false;}
+    const was=CabLoader.readCabs(localStorage).find(c=>c.name.toLowerCase()===$("fxCabName").value.trim().toLowerCase());
+    fsIcons("cab",was&&was.icon).catch(e=>fsCabSay(e.message));
+    fsCabSay((t3k?"":file+" · ")+"fitted within "+cab.errorDb.toFixed(1)+" dB");
+  }catch(e){if(me===cabUse)fsCabSay(file+": "+e.message);}
+  finally{if(me===cabUse)$("fxCabInstall").disabled=false;}
 }
 // As for captures: a new slot (an unused ID, picked here) or in place of a cab on the pedal.
 function fsCabSlots(){
@@ -3258,12 +3361,14 @@ function fsCabSlots(){
   for(let slot=1;!fresh&&slot<=CAB_SLOTS;slot++)if(!used.has(slot))fresh=slot;
   sel.textContent="";
   const add=(value,text)=>{const o=document.createElement("option");o.value=value;o.textContent=text;sel.appendChild(o);};
-  if(fresh)add(fresh,"New cab (slot "+fresh+")");
-  for(const c of caps)add(c.slot,"Replace "+(c.e?CabLoader.pedalName(c.e.name)+" · ":"")+c.file+" (slot "+c.slot+")");
+  if(fresh)add(fresh,"Nothing, add as new");
+  for(const c of caps)add(c.slot,(c.e?CabLoader.pedalName(c.e.name)+" · ":"")+c.file);
+  sel.closest("label").hidden=sel.options.length<2||!!fsPacks.cab;
   const mine=same&&caps.find(c=>c.slot===same.slot),pickedOk=picked&&!same&&[...sel.options].some(o=>o.value===picked);
   sel.value=mine?String(mine.slot):pickedOk?picked:String(fresh||(caps[0]||{}).slot||"");
 }
 async function fsCabInstall(){
+  if(fsPacks.cab)return fsPackInstall("cab");
   fsCanWrite();
   if(!fsCab)throw new Error("Choose a cab IR (.wav) first.");
   const slot=Number($("fxCabSlot").value),name=CabLoader.cabName($("fxCabName").value.trim()),bank=CabLoader.readCabs(localStorage);
@@ -3276,7 +3381,7 @@ async function fsCabInstall(){
   const mr=await fetch("cab_template/cab.json",{cache:"no-store"});if(!mr.ok)throw new Error("The cab engine files are unavailable.");
   const manifest=await mr.json(),meta=SlotIdentity.slotMeta(manifest,slot),tr=await fetch("cab_template/"+meta.file,{cache:"no-store"});
   if(!tr.ok)throw new Error("The cab engine files are unavailable.");
-  const result=await CabLoader.fillCab(await tr.arrayBuffer(),manifest,slot,fsCab.cab,name,null);
+  const icon=$("fxCabIcon").value||null,result=await CabLoader.fillCab(await tr.arrayBuffer(),manifest,slot,fsCab.cab,name,icon);
   const file=result.report.filename;
   const old=fsCaptures().find(c=>!c.nam&&c.slot===slot&&c.f.name.toUpperCase()!==file.toUpperCase());
   const what=file+" ("+CabLoader.pedalName(name)+", cab slot "+slot+", "+result.bytes.length+" bytes)";
@@ -3284,10 +3389,320 @@ async function fsCabInstall(){
   if(old&&!await fsRemove(old.f.name,{confirmed:true}))return;
   fsCabSay("Installing "+file+"…");
   if(!await fsInstall(file,Array.from(result.bytes),{confirmed:true}))return;
-  CabLoader.saveCabs(localStorage,[...bank.filter(c=>c.slot!==slot),{...fsCab.cab,slot,name,icon:null}]);
+  const t=fsCab.cab.tone3000;
+  CabLoader.saveCabs(localStorage,[...bank.filter(c=>c.slot!==slot),{...fsCab.cab,slot,name,icon,...(t?{pack:{key:"t3k:"+t.toneId,title:t.title},variant:t.model}:{})}]);
   if(syncNamCaptureNames())render();
+  await fsTidyList();
   fsRenderNam();
-  fsCabSay(file+" installed in cab slot "+slot+" and read back identical. Power-cycle the pedal; it shows as "+CabLoader.pedalName(name)+".");
+  fsCabSay("Installed as "+CabLoader.pedalName(name)+" (slot "+slot+"). Power-cycle the pedal.");
+}
+// TONE3000 (https://www.tone3000.com/api): pick a capture or cab IR in TONE3000's
+// own browser (the Select flow: OAuth with PKCE, in a popup that lands on
+// t3k_callback.html), then fetch it straight into this page; nothing is saved
+// to a folder. Free tier, non-commercial. The key is the publishable client_id,
+// meant to ship in pages; the secret key is never used here.
+const T3K="https://www.tone3000.com",T3K_KEY="t3k_pub_ve0H1R8eFeu6oPsJvFBEoV498BfSobWs";
+const t3kRedirect=()=>new URL("t3k_callback.html",location.href).href;
+// The sign-in is remembered in this browser ({access, refresh, expires}) and
+// refreshed when it runs out; Sign out forgets it.
+const T3K_TOKENS="t3k_tokens";
+let t3kAuth=(()=>{try{return JSON.parse(localStorage.getItem(T3K_TOKENS)||"null");}catch{return null;}})();
+function t3kKeep(d){
+  t3kAuth={access:d.access_token,refresh:d.refresh_token,expires:Date.now()+(Number(d.expires_in)||3600)*1000};
+  try{localStorage.setItem(T3K_TOKENS,JSON.stringify(t3kAuth));}catch{}
+}
+async function t3kAccess(){
+  if(!t3kAuth)throw new Error("Sign in to TONE3000 first.");
+  if(Date.now()<t3kAuth.expires-60000)return t3kAuth.access;
+  const r=await fetch(T3K+"/api/v1/oauth/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:new URLSearchParams({grant_type:"refresh_token",refresh_token:t3kAuth.refresh,client_id:T3K_KEY})});
+  if(!r.ok){t3kSignOut();throw new Error("The TONE3000 sign-in ran out. Sign in again.");}
+  t3kKeep(await r.json());return t3kAuth.access;
+}
+function t3kSignOut(){t3kAuth=null;try{localStorage.removeItem(T3K_TOKENS);}catch{}t3kShow();}
+const b64url=b=>btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const t3kSay=(kind,t)=>kind==="cab"?fsCabSay(t):kind==="nam"?fsNamSay(t):$("t3kStatus").textContent=t;
+async function t3kChoose(kind){
+  const verifier=b64url(crypto.getRandomValues(new Uint8Array(32))),state=b64url(crypto.getRandomValues(new Uint8Array(16)));
+  const challenge=b64url(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(verifier))));
+  sessionStorage.setItem("t3k_pkce",JSON.stringify({verifier,state,kind}));
+  const u=new URL(T3K+"/api/v1/oauth/authorize");
+  // Captures: A2 NAM only (the engine runs A2 Lite); cabs: IRs; "signin": just sign in.
+  const q={client_id:T3K_KEY,redirect_uri:t3kRedirect(),response_type:"code",code_challenge:challenge,code_challenge_method:"S256",state,menubar:"true",
+    ...(kind==="signin"?{}:{prompt:"select_tone",preview:"true",...(kind==="cab"?{format:"ir"}:{format:"nam",architecture:"2"})})};
+  for(const [k,v] of Object.entries(q))u.searchParams.set(k,v);
+  const w=480,h=720,pop=window.open(u.href,"t3k_select",`width=${w},height=${h},left=${Math.round(screenX+(outerWidth-w)/2)},top=${Math.round(screenY+(outerHeight-h)/2)}`);
+  t3kSay(kind,!pop?"The browser blocked the TONE3000 window: allow pop-ups for this page, then try again.":kind==="signin"?"Sign in in the TONE3000 window…":"Pick "+(kind==="cab"?"a cab IR":"a capture")+" in the TONE3000 window…");
+}
+async function t3kGet(path){
+  const r=await fetch(T3K+path,{headers:{Authorization:"Bearer "+await t3kAccess()}});
+  if(r.status===401){t3kSignOut();throw new Error("TONE3000 no longer accepts the sign-in. Sign in again.");}
+  if(!r.ok)throw new Error(r.status===429?"TONE3000 is limiting requests: wait a minute and try again.":"TONE3000 answered "+r.status+" for "+path.split("?")[0]+".");
+  return r.json();
+}
+// The sign-in window's result (t3k_callback.html relays it). Only the tab that started it holds the PKCE secrets.
+async function t3kCallback(m){
+  if(!m||m.type!=="t3k_oauth_callback")return;
+  let saved=null;try{saved=JSON.parse(sessionStorage.getItem("t3k_pkce")||"null");}catch{}
+  if(!saved)return;
+  sessionStorage.removeItem("t3k_pkce");
+  const kind=saved.kind;
+  try{
+    if(m.state!==saved.state)throw new Error("The TONE3000 sign-in doesn't match this page. Try again.");
+    if(m.canceled&&!m.code){t3kSay(kind,"Closed TONE3000 without signing in.");return;}
+    if(m.error)throw new Error("TONE3000 sign-in failed ("+m.error+").");
+    if(!m.code)throw new Error("TONE3000 sent no sign-in code. Try again.");
+    const r=await fetch(T3K+"/api/v1/oauth/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:new URLSearchParams({grant_type:"authorization_code",code:m.code,code_verifier:saved.verifier,redirect_uri:t3kRedirect(),client_id:T3K_KEY})});
+    if(!r.ok)throw new Error("TONE3000 sign-in failed ("+r.status+").");
+    t3kKeep(await r.json());t3kShow();
+    if(kind==="signin"){t3kSay(kind,"");return;}
+    if(m.canceled||!m.tone_id){t3kSay(kind,"Closed TONE3000 without picking one.");return;}
+    await t3kTone(kind,m.tone_id);
+  }catch(e){t3kSay(kind,e.message);}
+}
+window.addEventListener("message",e=>{if(e.origin===location.origin)t3kCallback(e.data);});
+try{new BroadcastChannel("t3k_oauth").onmessage=e=>t3kCallback(e.data);}catch{}
+// A picked tone: list its models, credit it, and load one (a Lite model first for captures).
+async function t3kTone(kind,id){
+  const cab=kind==="cab",pre=cab?"fxCab":"fxNam";
+  t3kSay(kind,"Loading the tone from TONE3000…");
+  const tone=await t3kGet("/api/v1/tones/"+encodeURIComponent(id)+(cab?"":"?architecture=2"));
+  const models=((await t3kGet("/api/v1/models?tone_id="+encodeURIComponent(id)+"&page_size=100"+(cab?"":"&architecture=2"))).data)||[];
+  if(!models.length)throw new Error("“"+tone.title+"” has no "+(cab?"IRs":"A2 captures")+" to load.");
+  const sel=$(pre+"T3kModel");sel.textContent="";
+  models.forEach((mo,i)=>{const o=document.createElement("option");o.value=i;o.textContent=mo.name+(mo.size&&mo.size!=="standard"?" ("+mo.size+")":"");sel.appendChild(o);});
+  const lite=cab?-1:models.findIndex(mo=>mo.size==="lite");sel.value=String(lite>=0?lite:0);
+  const credit=$(pre+"T3kCredit");credit.textContent="";
+  const a=document.createElement("a");a.href=tone.url;a.target="_blank";a.rel="noopener";a.textContent=tone.title;
+  const by=document.createElement("span");by.className="by";by.append("by ");
+  if(tone.user?.avatar_url){const av=document.createElement("img");av.src=tone.user.avatar_url;av.alt="";av.className="t3k-avatar";by.append(av);}
+  const who=document.createElement("a");who.href=tone.user?.url||tone.url;who.target="_blank";who.rel="noopener";who.textContent=tone.user?.username||"unknown";by.append(who);
+  credit.append(a,by);
+  const art=$(pre+"T3kArt"),pic=tone.images&&tone.images[0];art.hidden=!pic;if(pic)art.src=pic;
+  sel.closest("label").hidden=true;
+  $(pre+"T3kPick").hidden=false;
+  if(models.length>1){
+    fsPackStart(kind,{key:"t3k:"+tone.id,title:tone.title},models.map(mo=>({label:mo.name+(mo.size&&mo.size!=="standard"?" ("+mo.size+")":""),variant:mo.name,
+      load:()=>t3kFetch(mo),t3k:t3kCredit(tone,mo),lite:mo.size==="lite"})));
+    return;
+  }
+  fsPackEnd(kind);
+  await t3kModel(kind,tone,models[0]);
+}
+const t3kCredit=(tone,mo)=>({toneId:tone.id,title:tone.title,creator:tone.user?.display_name||tone.user?.username||"",creatorUrl:tone.user?.url||"",url:tone.url,license:tone.license,modelId:mo.id,model:mo.name});
+async function t3kFetch(mo){
+  const r=await fetch(mo.model_url,{headers:{Authorization:"Bearer "+await t3kAccess()}});
+  if(!r.ok)throw new Error("TONE3000 download failed ("+r.status+").");
+  return r;
+}
+async function t3kModel(kind,tone,mo){
+  t3kSay(kind,"Downloading "+mo.name+" from TONE3000…");
+  const r=await t3kFetch(mo),t3k=t3kCredit(tone,mo);
+  if(kind==="cab")await fsCabUse(mo.name+".wav",await r.arrayBuffer(),{t3k,suggest:tone.title});
+  else fsNamUse(mo.name+".nam",await r.text(),{t3k,suggest:tone.title});
+}
+// A tone by its id, into the capture or cab form by its format.
+async function t3kLoad(id){
+  t3kSay("signin","Loading…");
+  const tone=await t3kGet("/api/v1/tones/"+encodeURIComponent(id));
+  const kind=tone.format==="nam"?"nam":tone.format==="ir"?"cab":"";
+  if(!kind)throw new Error("“"+tone.title+"” is "+tone.format+": only NAM captures and IRs load here.");
+  t3kSay("signin","");
+  await t3kTone(kind,id);
+}
+// "tone3000.com/tones/<name>-<id>", or just the id.
+function t3kIdFrom(text){const m=String(text).trim().match(/(?:\/tones\/(?:[^/?#]*-)?|^)(\d+)(?:[/?#]|$)/);return m?m[1]:"";}
+async function t3kFavourites(){
+  const sel=$("t3kFav");sel.textContent="";
+  const head=document.createElement("option");head.value="";head.textContent="Loading…";sel.appendChild(head);
+  const list=((await t3kGet("/api/v1/tones/favorited?page_size=100")).data||[]).filter(t=>t.format==="nam"||t.format==="ir");
+  head.textContent=list.length?"Pick one ("+list.length+")":"None yet: favourite tones on tone3000.com";
+  for(const t of list){const o=document.createElement("option");o.value=t.id;o.textContent=t.title+(t.format==="ir"?" (IR)":"")+" · "+(t.user?.username||"");sel.appendChild(o);}
+}
+function t3kShow(){
+  const on=!!t3kAuth;
+  $("t3kSignIn").hidden=on;for(const id of ["t3kFavWrap","t3kLinkWrap","t3kLoadBtn","t3kSignOut"])$(id).hidden=!on;
+  if(on){t3kSay("signin","");t3kFavourites().catch(e=>t3kSay("signin",e.message));}
+}
+// The pedal-screen picture: the name and an icon (cover_art.js), as the
+// NAM + Cab Loader draws it. Covers come from the engines' manifests.
+const fsCovers={};
+async function fsCover(kind){
+  if(!fsCovers[kind]){const r=await fetch(kind==="cab"?"cab_template/cab.json":"nam_template/multi.json",{cache:"no-store"});if(!r.ok)throw new Error("The engine files are unavailable.");fsCovers[kind]=(await r.json()).cover;}
+  return fsCovers[kind];
+}
+async function fsIcons(kind,prefer){
+  const pre=kind==="cab"?"fxCab":"fxNam",cover=await fsCover(kind),sel=$(pre+"Icon");
+  if(!sel.options.length)for(const {id,label} of CoverArt.icons(cover)){const o=document.createElement("option");o.value=id;o.textContent=label;sel.appendChild(o);}
+  if(prefer&&[...sel.options].some(o=>o.value===prefer))sel.value=prefer;else if(!sel.value)sel.value=cover.default_icon;
+  fsPreview(kind);
+}
+// The 128x64 screen at 2x, pixels 1.4x tall as the pedal shows them.
+function fsPreview(kind){
+  const pre=kind==="cab"?"fxCab":"fxNam",cover=fsCovers[kind],cv=$(pre+"Preview");if(!cover||!cv)return;
+  const first=fsPacks[kind]&&fsPacks[kind].rows.find(r=>r.on);
+  const px=CoverArt.draw(cover,first?first.name:$(pre+"Name").value.trim(),$(pre+"Icon").value||cover.default_icon),g=cv.getContext("2d");
+  g.fillStyle=tok("--screen-bg","#111");g.fillRect(0,0,cv.width,cv.height);g.fillStyle=tok("--screen-fg","#dfe2ff");
+  const sx=cv.width/128,sy=cv.height/64;
+  for(let y=0;y<64;y++)for(let x=0;x<128;x++)if(px[y*128+x])g.fillRect(x*sx,y*sy,Math.ceil(sx),Math.ceil(sy));
+}
+// Packs: several variations of one capture or cab (a TONE3000 tone's models,
+// or several files) installed together under one pack code, so they get
+// family names and sit together on the pedal.
+const fsPacks={nam:null,cab:null};   // {pack:{key,title}, rows:[{label,variant,load,t3k,on,name,edited}]}
+const PACK_KB={nam:31,cab:16};      // about what each file takes on the pedal
+function fsPackStart(kind,pack,rows){
+  const pre=kind==="cab"?"fxCab":"fxNam";
+  if(kind==="cab")fsCab=null;else fsNam=null;
+  const few=rows.length<=4,lite=rows.some(r=>r.lite);
+  fsPacks[kind]={pack,rows:rows.map(r=>({...r,on:lite?!!r.lite:few,name:"",edited:false}))};
+  $(pre+"Code").value=packCode(pack.title);
+  for(const [id,on] of [[pre+"CodeWrap",true],[pre+"Pack",true],[pre+"T3kPick",true],[pre+"Next",true]])$(id).hidden=!on;
+  $(pre+"Name").closest("label").hidden=true;$(pre+"Slot").closest("label").hidden=true;$(pre+"T3kModel").closest("label").hidden=true;
+  fsPackNames(kind);fsPackRender(kind);
+  fsIcons(kind).catch(e=>t3kSay(kind,e.message));
+  t3kSay(kind,"");
+}
+function fsPackEnd(kind){
+  const pre=kind==="cab"?"fxCab":"fxNam";if(!fsPacks[kind])return;
+  fsPacks[kind]=null;$(pre+"Pack").hidden=true;$(pre+"CodeWrap").hidden=true;$(pre+"Name").closest("label").hidden=false;
+  $(pre+"Install").textContent=kind==="cab"?"Fit and install":"Convert and install";
+  if(kind==="cab")fsCabSlots();else fsNamSlots();
+}
+function fsPackFiles(kind,files){
+  const pre=kind==="cab"?"fxCab":"fxNam",ext=kind==="cab"?/\.wav$/i:/\.nam$/i;
+  const names=files.map(f=>f.name.replace(ext,""));
+  $(pre+"T3kArt").hidden=true;$(pre+"T3kCredit").textContent=files.length+" files";
+  const title=commonPart(names)||"Files";   // unrelated files: a neutral pack
+  fsPackStart(kind,{key:"files:"+title.toLowerCase(),title},
+    files.map((f,i)=>({label:f.name,variant:names[i],load:async()=>new Response(f)})));
+}
+// The words all the names share (a pack's title when the files don't name one).
+function commonPart(names){
+  const w=names.map(n=>n.split(/[\s_-]+/));let out=[];
+  for(const word of w[0])if(w.every(x=>x.some(y=>y.toLowerCase()===word.toLowerCase())))out.push(word);
+  return out.join(" ").trim();
+}
+// A short code from a title: initials, or the start of a one-word title ("Two-Rock SSS" -> "TR").
+function packCode(title){
+  const words=String(title||"").split(/[^a-zA-Z0-9]+/).filter(w=>/[a-zA-Z]/.test(w));
+  const code=words.length>1?words.map(w=>w[0]).join("").slice(0,2):(words[0]||"P").slice(0,2);
+  return code[0].toUpperCase()+code.slice(1);
+}
+// Family names: the pack code, then what tells each variant apart (the words
+// they don't share, compacted; numbers kept). The pedal shows 5 characters
+// after NAM-/CAB-, so those must differ within the pack and from the others.
+function fsPackNames(kind){
+  const P=fsPacks[kind];if(!P)return;
+  const code=($(kind==="cab"?"fxCabCode":"fxNamCode").value.replace(/[^a-zA-Z0-9]/g,"")||"P").replace(/^[^a-zA-Z]+/,"P");
+  const shared=new Set(commonPart(P.rows.map(r=>r.variant)).toLowerCase().split(" ").filter(Boolean));
+  const room=8-code.length,taken=new Set(),others=fsTakenNames(kind);
+  for(const r of P.rows){
+    if(r.edited){taken.add(r.name.slice(0,5).toLowerCase());continue;}
+    const words=r.variant.split(/[^a-zA-Z0-9]+/).filter(w=>w&&!shared.has(w.toLowerCase()));
+    let v=words.map(w=>/^\d+$/.test(w)?w:w[0].toUpperCase()+w.slice(1).toLowerCase()).join("");
+    if(v.length>room)v=words.map(w=>/^\d+$/.test(w)?w:w[0].toUpperCase()+w.slice(1).replace(/[aeiou]/gi,"").toLowerCase()).join("");
+    let name=(code+v).slice(0,8)||code;
+    for(let n=1;taken.has(name.slice(0,5).toLowerCase())||others.has(name.slice(0,5).toLowerCase());n++)name=(code+v).slice(0,Math.min(4,8-String(n).length))+n;
+    taken.add(name.slice(0,5).toLowerCase());r.name=name;
+  }
+}
+// The first 5 characters of the names other captures (or cabs) already use.
+function fsTakenNames(kind){
+  return new Set(kind==="cab"?CabLoader.readCabs(localStorage).map(c=>c.name.slice(0,5).toLowerCase()):NAMLoader.readRegistry(localStorage).map(e=>e.shortName.slice(0,5).toLowerCase()));
+}
+function fsPackRender(kind){
+  const P=fsPacks[kind],pre=kind==="cab"?"fxCab":"fxNam",box=$(pre+"Pack");box.textContent="";
+  const on=P.rows.filter(r=>r.on).length,head=document.createElement("div");head.className="pack-head";
+  const all=document.createElement("button");all.type="button";all.textContent=on===P.rows.length?"None":"All";
+  all.onclick=()=>{const v=on!==P.rows.length;P.rows.forEach(r=>r.on=v);fsPackRender(kind);};
+  const kb=on*PACK_KB[kind],free=fsFiles&&fsFiles.free!=null?Math.round(fsFiles.free/1024):null;
+  head.append(on+" of "+P.rows.length+" selected · ~"+kb+" KB"+(free!=null?" of "+free+" KB free":""),all);box.appendChild(head);
+  for(const r of P.rows){
+    const row=document.createElement("label");row.className="pack-row";
+    const cb=document.createElement("input");cb.type="checkbox";cb.checked=r.on;cb.onchange=()=>{r.on=cb.checked;fsPackRender(kind);};
+    const lbl=document.createElement("span");lbl.className="lbl";lbl.textContent=r.label;lbl.title=r.label;
+    const nm=document.createElement("input");nm.type="text";nm.maxLength=8;nm.value=r.name;nm.title="Its name; the pedal shows "+(kind==="cab"?"CAB-":"NAM-")+" plus the first 5";
+    nm.oninput=()=>{r.name=nm.value.trim();r.edited=true;fsPreview(kind);};
+    row.append(cb,lbl,nm);box.appendChild(row);
+  }
+  $(pre+"Install").textContent=on?"Install "+on:"Install";
+  fsPreview(kind);
+}
+async function fsPackInstall(kind){
+  fsCanWrite();
+  const P=fsPacks[kind],cab=kind==="cab",pre=cab?"fxCab":"fxNam",say=t=>t3kSay(kind,t),rows=P.rows.filter(r=>r.on);
+  if(!rows.length)throw new Error("Tick at least one.");
+  for(const r of rows)cab?CabLoader.cabName(r.name):NAMLoader.shortName(r.name);
+  const seen=new Set(),others=fsTakenNames(kind);
+  for(const r of rows){const k=r.name.slice(0,5).toLowerCase();if(seen.has(k)||others.has(k))throw new Error(r.name+": another "+(cab?"cab":"capture")+" already shows as "+(cab?"CAB-":"NAM-")+r.name.slice(0,5)+" on the pedal. Change its first 5 letters.");seen.add(k);}
+  if(!fsFiles)await fsScan();
+  if(fsFiles.free!=null&&fsFiles.free<rows.length*PACK_KB[kind]*1024+8192)throw new Error("Not enough space on the pedal for "+rows.length+" (about "+rows.length*PACK_KB[kind]+" KB; "+Math.round(fsFiles.free/1024)+" KB free). Untick some, or remove some first.");
+  // New slots, in order: none of them used by a capture on the pedal or made in this browser.
+  const used=new Set([...fsCaptures().filter(c=>c.nam!==cab).map(c=>c.slot),...(cab?CabLoader.readCabs(localStorage).map(c=>c.slot):NAMLoader.readRegistry(localStorage).map(e=>e.slot))]);
+  const slots=[];for(let s=1;slots.length<rows.length&&s<=(cab?CAB_SLOTS:NAMLoader.NAM_SLOTS);s++)if(!used.has(s))slots.push(s);
+  if(slots.length<rows.length)throw new Error("Not enough free "+(cab?"cab":"capture")+" slots.");
+  if(!confirm("Install "+rows.length+" "+(cab?"cabs":"captures")+" from “"+P.pack.title+"”: "+rows.map(r=>(cab?"CAB-":"NAM-")+r.name.slice(0,5)).join(", ")+"? Each is written and read back; the current effect list is offered for saving first: save it. Don't touch the pedal or the cable."))return;
+  const icon=$(pre+"Icon").value||null,rate=cab?null:$("fxNamRate").value;
+  const dir=cab?"cab_template/":NAM_TEMPLATES[rate],mr=await fetch(dir+(cab?"cab.json":"multi.json"),{cache:"no-store"});
+  if(!mr.ok)throw new Error("The engine files are unavailable.");
+  const manifest=await mr.json();let done=0;const skipped=[];
+  for(const [i,r] of rows.entries()){
+    const slot=slots[i],tag=(i+1)+" of "+rows.length+": ";
+    try{
+      say(tag+"getting "+r.label+"…");
+      const res=await r.load(),meta=SlotIdentity.slotMeta(manifest,slot),tr=await fetch(dir+meta.file,{cache:"no-store"});
+      if(!tr.ok)throw new Error("The engine files are unavailable.");
+      const extra={pack:P.pack,variant:r.variant,...(r.t3k?{tone3000:r.t3k}:{})};
+      if(cab){
+        say(tag+"fitting "+r.label+"…");
+        const fitted={...await cabFit(await res.arrayBuffer()),source:r.label,...extra};
+        const result=await CabLoader.fillCab(await tr.arrayBuffer(),manifest,slot,fitted,r.name,icon);
+        say(tag+"installing "+result.report.filename+"…");
+        if(!await fsInstall(result.report.filename,Array.from(result.bytes),{confirmed:true,rescan:false}))break;
+        CabLoader.saveCabs(localStorage,[...CabLoader.readCabs(localStorage).filter(c=>c.slot!==slot),{...fitted,slot,name:r.name,icon}]);
+      }else{
+        const text=await res.text(),model=JSON.parse(text);NAMLoader.selectModel(model);
+        say(tag+"converting "+r.label+"…");
+        const result=await NAMLoader.convertNamed(model,await tr.arrayBuffer(),manifest,slot,r.name,icon,{});
+        say(tag+"installing "+result.report.filename+"…");
+        if(!await fsInstall(result.report.filename,Array.from(result.bytes),{confirmed:true,rescan:false}))break;
+        Object.assign(result.report,{sourceFile:r.label,...extra,eco:rate!=="full",rate,cost:manifest.dsp_cost,sourceSha256:await NAMLoader.sha256(new TextEncoder().encode(text))});
+        NAMLoader.remember(localStorage,result.report);
+      }
+      done++;
+    }catch(e){skipped.push(r.label+" ("+e.message+")");log("pack: "+r.label+": "+e.message,"warn");}
+  }
+  if(syncNamCaptureNames())render();
+  await fsTidyList();
+  await fsScan();
+  fsPackEnd(kind);$(pre+"Next").hidden=true;$(pre+"T3kPick").hidden=true;
+  say("Installed "+done+" of "+rows.length+(skipped.length?". Skipped: "+skipped.join("; "):"")+". Power-cycle the pedal.");
+}
+// Our captures and cabs, grouped in the pedal's effect list (group 8's section):
+// other effects keep their order, then captures pack by pack, then cabs,
+// variants in number order (gain 3 before gain 10).
+function fsListGrouped(list){
+  const s=fsSection(list,8);if(!s)return null;
+  const reg=NAMLoader.readRegistry(localStorage),bank=CabLoader.readCabs(localStorage);
+  const cmp=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"});
+  const recs=[];for(let at=s.start;at+13<=s.end;at+=13)recs.push({bytes:list.slice(at,at+13),name:fsRecord(list,at).toUpperCase()});
+  const sortKey=r=>{
+    if(/^NAM\d/.test(r.name)){const e=reg.find(x=>String(x.filename||"").toUpperCase()===r.name);return [0,e?.pack?.title||e?.shortName||r.name,e?.pack?e.variant:""];}
+    if(/^C\d/.test(r.name)){const c=bank.find(x=>CabLoader.fileName(x.slot,x.name).toUpperCase()===r.name);return [1,c?.pack?.title||c?.name||r.name,c?.pack?c.variant:""];}
+    return null;
+  };
+  const others=recs.filter(r=>!sortKey(r)),caps=recs.filter(r=>sortKey(r)).map(r=>({r,k:sortKey(r)}));
+  caps.sort((a,b)=>a.k[0]-b.k[0]||cmp(a.k[1],b.k[1])||cmp(a.k[2],b.k[2])||cmp(a.r.name,b.r.name));
+  const out=list.slice();
+  [...others.map(r=>r.bytes),...caps.map(c=>c.r.bytes)].forEach((b,i)=>{for(let j=0;j<13;j++)out[s.start+i*13+j]=b[j];});
+  return out.every((b,i)=>b===list[i])?null:out;
+}
+async function fsTidyList(){
+  const list=await fsRead(FS_LIST);if(list.length!==4108)return;
+  const out=fsListGrouped(list);
+  if(out){fsSay("Grouping captures and cabs in the pedal's effect list…");await fsWrite(FS_LIST,out);}
 }
 // DSP estimate for the capture being made: its declared cost (the engine
 // manifests' dsp_cost) against the pedal's budget, alone and in the open patch.
@@ -3304,27 +3719,38 @@ function fsNamDsp(){
   const ours=DB.custom.filter(e=>!e.namSlot&&!e.cabSlot&&e.cost>0).map(e=>e.cost).sort((a,b)=>a-b);
   const usual=ours.length?Math.round(ours[ours.length>>1]):0,cab=(DB.custom.find(e=>e.cabSlot)||{}).cost||0;
   const k=usual?Math.floor((room-cab)/usual):0;
-  let text="This capture: "+cost+" of ~"+DSP_BUDGET+". Leaves "+room+" for the other five slots: "+
-    (cab&&room>=cab?"a cab IR ("+cab+")"+(k>0?" plus "+(k===1?"one":k)+" of this project's effects ("+usual+" each)":""):"little else")+
-    "; never a second capture.";
-  if(patch)text+=" With the open patch"+(replaces?" (its slot-"+slot+" capture replaced)":"")+": "+Math.round(sum)+(pct>100?", over: the pedal will say DSP Full.":", fits.")+(unknown?" Some effects' costs are unknown.":"");
+  let text=cost+" of ~"+DSP_BUDGET+". Room left: "+(cab&&room>=cab?"a cab"+(k>0?" + "+(k===1?"one":k)+" effect"+(k===1?"":"s"):""):"little")+".";
+  if(patch)text+=" Open patch: "+(pct>100?"over, DSP Full.":"fits.")+(unknown?" (some costs unknown)":"");
+  m.title="This capture uses "+cost+" of ~"+DSP_BUDGET+" (declared costs). Room left ("+room+"): a cab IR ("+cab+")"+(k>0?" plus "+k+" of this project's effects ("+usual+" each)":"")+"; never a second capture."+(patch?"\nWith the open patch"+(replaces?" (its slot-"+slot+" capture replaced)":"")+": "+Math.round(sum)+".":"");
   $("fxNamDspText").textContent=text;
 }
 const fsNamSay=t=>{$("fxNamStatus").textContent=t;};
 async function fsNamPick(){
+  const files=[...$("fxNamFile").files];if(!files.length)return;
+  if(files.length>1){fsPackFiles("nam",files);return;}
+  const f=files[0];fsPackEnd("nam");
+  $("fxNamT3kPick").hidden=true;
+  if(f.size>20*1024*1024){fsNam=null;fsNamSay("This file is over 20 MB: not a NAM capture this engine can run.");return;}
+  fsNamUse(f.name,await f.text());
+}
+const shortFrom=v=>String(v||"").replace(/[^a-zA-Z0-9_-]/g,"").replace(/^[^a-zA-Z]+/,"").slice(0,8);
+// A capture to install, from a file or from TONE3000 (t3k: its credit; suggest: a short name).
+function fsNamUse(file,text,{t3k=null,suggest=""}={}){
   fsNam=null;$("fxNamNotes").hidden=true;
-  const f=$("fxNamFile").files[0];if(!f)return;
-  if(f.size>20*1024*1024){fsNamSay("This file is over 20 MB: not a NAM capture this engine can run.");return;}
   try{
-    const text=await f.text(),model=JSON.parse(text);
+    const model=JSON.parse(text);
     NAMLoader.selectModel(model);   // throws for captures the engine can't run
-    fsNam={file:f.name,text,model};
-    if(!$("fxNamName").value.trim()){const base=String(model.metadata?.name||f.name.replace(/\.nam$/i,"")).replace(/[^a-zA-Z0-9_-]/g,"").replace(/^[^a-zA-Z]+/,"").slice(0,8);$("fxNamName").value=base;}
+    fsNam={file,text,model,t3k};$("fxNamNext").hidden=false;
+    if(suggest||!$("fxNamName").value.trim())$("fxNamName").value=shortFrom(suggest)||shortFrom(model.metadata?.name)||shortFrom(file.replace(/\.nam$/i,""))||"capture";
     fsNamSlots();
-    fsNamSay(f.name+": a capture this engine can run. Check the name and slot, then convert and install.");
-  }catch(e){fsNamSay(f.name+": "+e.message);}
+    const was=NAMLoader.readRegistry(localStorage).find(e=>e.shortName.toLowerCase()===$("fxNamName").value.trim().toLowerCase());
+    fsIcons("nam",was&&was.icon).catch(e=>fsNamSay(e.message));
+    fsNamSay(t3k?"":file);
+    return true;
+  }catch(e){fsNamSay(file+": "+e.message);return false;}
 }
 async function fsNamInstall(){
+  if(fsPacks.nam)return fsPackInstall("nam");
   fsCanWrite();
   if(!fsNam)throw new Error("Choose a .nam capture first.");
   const slot=Number($("fxNamSlot").value),name=NAMLoader.shortName($("fxNamName").value.trim()),rate=$("fxNamRate").value;
@@ -3339,7 +3765,7 @@ async function fsNamInstall(){
   const manifest=await mr.json(),meta=SlotIdentity.slotMeta(manifest,slot),tr=await fetch(dir+meta.file,{cache:"no-store"});
   if(!tr.ok)throw new Error("The NAM engine files are unavailable.");
   fsNamSay("Converting "+fsNam.file+"…");
-  const result=await NAMLoader.convertNamed(fsNam.model,await tr.arrayBuffer(),manifest,slot,name,null,{});
+  const result=await NAMLoader.convertNamed(fsNam.model,await tr.arrayBuffer(),manifest,slot,name,$("fxNamIcon").value||null,{});
   const file=result.report.filename;
   // Another capture in this slot (another name) goes first: two files can't share a slot's ID.
   const old=fsCaptures().find(c=>c.nam&&c.slot===slot&&c.f.name.toUpperCase()!==file.toUpperCase());
@@ -3348,12 +3774,13 @@ async function fsNamInstall(){
   if(old&&!await fsRemove(old.f.name,{confirmed:true}))return;
   fsNamSay("Installing "+file+"…");
   if(!await fsInstall(file,Array.from(result.bytes),{confirmed:true}))return;
-  Object.assign(result.report,{sourceFile:fsNam.file,eco:rate!=="full",rate,cost:manifest.dsp_cost,sourceSha256:await NAMLoader.sha256(new TextEncoder().encode(fsNam.text))});
+  Object.assign(result.report,{sourceFile:fsNam.file,...(fsNam.t3k?{tone3000:fsNam.t3k,pack:{key:"t3k:"+fsNam.t3k.toneId,title:fsNam.t3k.title},variant:fsNam.t3k.model}:{}),eco:rate!=="full",rate,cost:manifest.dsp_cost,sourceSha256:await NAMLoader.sha256(new TextEncoder().encode(fsNam.text))});
   NAMLoader.remember(localStorage,result.report);
   if(syncNamCaptureNames())render();
-  const a=$("fxNamNotes");a.href=URL.createObjectURL(new Blob([JSON.stringify(result.report,null,2)+"\n"],{type:"application/json"}));a.download=result.report.name+".json";a.textContent="Save capture notes ("+result.report.name+".json)";a.hidden=false;
+  await fsTidyList();
+  const a=$("fxNamNotes");a.href=URL.createObjectURL(new Blob([JSON.stringify(result.report,null,2)+"\n"],{type:"application/json"}));a.download=result.report.name+".json";a.textContent="Save capture notes";a.hidden=false;
   fsRenderNam();
-  fsNamSay(file+" installed in capture slot "+slot+" and read back identical. Power-cycle the pedal; it shows as "+NAMLoader.pedalName(name)+". Keep the capture notes: they say which capture is in which slot.");
+  fsNamSay("Installed as "+NAMLoader.pedalName(name)+" (slot "+slot+"). Power-cycle the pedal.");
 }
 const fsVersion=v=>{const n=parseFloat(v);return Number.isFinite(n)?n:-1;};
 // Zoom's effects from the updater the user chose (ZdlStrip, zdl_strip.js).
@@ -3434,11 +3861,27 @@ $("fxBackup").onclick=midiAction(fsBackup);
 $("fxReadUpdater").onclick=midiAction(fsReadUpdater);
 $("fxNamFile").onchange=fsNamPick;
 $("fxNamName").onchange=()=>{fsNamSlots();fsNamDsp();};
+$("fxNamName").oninput=()=>fsPreview("nam");
+$("fxNamIcon").onchange=()=>fsPreview("nam");
+$("fxNamCode").oninput=()=>{fsPackNames("nam");fsPackRender("nam");};
+$("fxNamFileBtn").onclick=()=>$("fxNamFile").click();
 $("fxNamRate").onchange=fsNamDsp;
 $("fxNamSlot").onchange=()=>{$("fxNamSlot").dataset.picked=$("fxNamSlot").value;fsNamDsp();};
 $("fxNamInstall").onclick=midiAction(fsNamInstall);
+$("t3kSignIn").onclick=()=>t3kChoose("signin").catch(e=>t3kSay("signin",e.message));
+$("t3kSignOut").onclick=t3kSignOut;
+$("t3kFav").onchange=()=>{const id=$("t3kFav").value;if(id)t3kLoad(id).catch(e=>t3kSay("signin",e.message));};
+$("t3kLoadBtn").onclick=()=>{const id=t3kIdFrom($("t3kLink").value);if(!id){t3kSay("signin","That doesn't look like a TONE3000 tone link.");return;}t3kLoad(id).catch(e=>t3kSay("signin",e.message));};
+$("t3kLink").onkeydown=e=>{if(e.key==="Enter")$("t3kLoadBtn").click();};
+t3kShow();
+$("fxNamT3k").onclick=()=>t3kChoose("nam").catch(e=>fsNamSay(e.message));
+$("fxCabT3k").onclick=()=>t3kChoose("cab").catch(e=>fsCabSay(e.message));
 $("fxCabFile").onchange=fsCabPick;
 $("fxCabName").onchange=fsCabSlots;
+$("fxCabName").oninput=()=>fsPreview("cab");
+$("fxCabIcon").onchange=()=>fsPreview("cab");
+$("fxCabCode").oninput=()=>{fsPackNames("cab");fsPackRender("cab");};
+$("fxCabFileBtn").onclick=()=>$("fxCabFile").click();
 $("fxCabSlot").onchange=()=>{$("fxCabSlot").dataset.picked=$("fxCabSlot").value;};
 $("fxCabInstall").onclick=midiAction(fsCabInstall);
 fsRenderNam();
@@ -3452,7 +3895,7 @@ fsLoadIndex().then(fsRender).catch(()=>{});
 function setupNavigation(){
   const move=(id,to,parent=false)=>$(to).appendChild(parent?$(id).closest("label"):$(id));
   const toolbar=$("mainToolbar");
-  for(const [id,label,target] of [["openLibrary","Library","libraryDrawer"],["openEffects","Effects","effectsDrawer"],["openSettings","⚙ Settings","settingsDrawer"]]){
+  for(const [id,label,target] of [["openLibrary","Library","libraryDrawer"],["openEffects","Effects","effectsDrawer"],["openNamCab","NAM / Cab","namCabDrawer"],["openSettings","⚙ Settings","settingsDrawer"]]){
     const b=document.createElement("button");b.id=id;b.textContent=label;b.setAttribute("aria-haspopup","dialog");b.setAttribute("aria-controls",target);
     b.onclick=()=>$(target).showModal();toolbar.appendChild(b);
   }
@@ -3474,7 +3917,7 @@ function setupNavigation(){
   for(const id of ["connect","connectionState","currentPatch","dspmeter","editStatus"])identity.appendChild($(id));
   const actions=document.createElement("div");actions.className="toolbar-actions";
   actions.appendChild(toolbar.querySelector('[aria-label="Pedal performance controls"]'));
-  for(const id of ["openLibrary","openEffects","openSettings"])actions.appendChild($(id));
+  for(const id of ["openLibrary","openEffects","openNamCab","openSettings"])actions.appendChild($(id));
   toolbar.append(identity,actions);
   const selectLibrary=local=>{
     $("pedalPane").hidden=local;$("browserPane").hidden=!local;

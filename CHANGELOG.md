@@ -33,6 +33,25 @@ dated. Effects in [dist/](dist/) carry their own version in the file
   ~228), what still fits beside it, and whether it fits the open patch.
   Captures and cabs on the pedal are listed with Remove. Eco+, split outputs
   and cabs are still made in the NAM + Cab Loader. Not yet tested on a pedal.
+- **NAM / Cab** is its own panel (a menu button in both editors): captures and
+  cabs on the pedal, install from a file or from **TONE3000** (pick in
+  TONE3000's own browser after signing in there; the capture or IR loads
+  straight into the page, credited to its creator; once signed in, your
+  TONE3000 favourites and pasted tone links load without the popup), the DSP
+  estimate, and a
+  link to the NAM + Cab Loader for making files. It replaces the NAM section
+  in Settings and the loader panel in editor.html.
+- **Packs** in NAM / Cab: a TONE3000 tone with several models (gain stages,
+  mics), or several files chosen at once, installs as one pack: tick the
+  variants, and they get family names (a pack code plus what sets each apart,
+  e.g. MP3, MP5, MP10 for Gain 3/5/10, distinct on the pedal's screen). After
+  every install the editor groups its captures and cabs in the pedal's effect
+  list (pack by pack, variants in number order), leaving every other effect's
+  place alone.
+- **Variant switcher**: a slot holding a capture or cab from a pack shows
+  ◀ name · 2/4 ▶ under its effect; stepping swaps in the next variant of the
+  pack (only those on the pedal, once it has been read), keeping the slot's
+  knob values, so gain stages can be auditioned in place.
 - **[editor.html](tools/editor.html)**: the Patch Editor in Modwerk's design,
   running the same code. In testing; the classic editor stays the default.
 

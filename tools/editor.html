@@ -108,6 +108,9 @@
   .slot .bypassHint{font-size:12px;color:var(--warn)!important}
   .knobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px 6px}
   .knob{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+  .variant-bar{display:flex;align-items:center;gap:6px;margin-top:-2px}
+  .variant-bar button{min-height:26px;width:30px;padding:0;font-size:11px}
+  .variant-label{flex:1;min-width:0;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .knob .kl{font-size:11px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .knob .kv{font-family:var(--mono);font-size:12px;color:var(--text-secondary)}
   .knob canvas{cursor:ns-resize;border-radius:50%}
@@ -132,9 +135,6 @@
   dialog{color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px}
   dialog::backdrop{background:rgba(8,8,10,.6)}
   dialog.drawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(720px,96vw);max-width:96vw;height:100dvh;max-height:100dvh;border-radius:0;border-width:0 0 0 1px;overflow:auto;padding:22px 24px 96px;background:var(--sidebar)}
-  dialog.drawer.wide{width:min(880px,96vw)}
-  dialog.drawer.wide[open]{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
-  .mw-frame{flex:1;width:100%;border:0;background:var(--sidebar)}
   .drawer-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
   .drawer-head h2{margin:0;font-size:20px;font-weight:600}
   .drawer-head button{min-height:32px;width:32px;padding:0}
@@ -155,6 +155,42 @@
   #fxRows button,#fxStockRows button,#fxNamRows button{min-height:28px;padding:2px 10px;font-size:12px}
   #fxStatus,#fxStockStatus,#fxNamStatus{color:var(--muted)}
   .nam-dsp{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin:4px 0 10px}
+  .drawer details.info{display:inline;border:0;padding:0;font-weight:400;letter-spacing:0}
+  .drawer details.info>summary{display:inline;color:var(--faint);font-weight:400}
+  .drawer details.info[open]>p{display:block;font-size:13px;color:var(--text-secondary);margin:6px 0 2px;max-width:62ch;line-height:1.5}
+  .nam-links{display:flex;gap:16px;margin-top:14px}
+  .nam-form label[hidden]{display:none!important}
+  .src-row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:10px 0 6px}
+  .src-row .or{color:var(--faint);font-size:13px}
+  .ident-row{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-start;margin:10px 0}
+  .ident-fields{display:flex;flex-direction:column;gap:10px;min-width:180px}
+  .ident-fields label{display:flex!important;flex-direction:column;align-items:stretch!important;gap:4px;font-size:12px;color:var(--muted)}
+  .lcd-preview{width:192px;height:auto;image-rendering:pixelated;border-radius:6px;border:1px solid var(--line)}
+  #namCabDrawer h3{margin-top:22px}
+  .t3k-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;margin:4px 0 6px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+  .t3k-brand{flex-basis:100%} .t3k-logo{height:20px;display:block}
+  .t3k-btn{display:inline-flex;align-items:center;gap:8px} .t3k-mark{height:14px}
+  .t3k-pick{align-items:center!important;gap:10px 14px!important;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+  .t3k-art{width:44px;height:44px;object-fit:cover;border-radius:6px;flex:none}
+  .t3k-credit{display:flex;flex-direction:column;gap:2px;font-size:14px;min-width:0;flex:1}
+  .t3k-credit>a{color:var(--text);font-weight:600;text-decoration:none} .t3k-credit>a:hover{text-decoration:underline}
+  .t3k-credit .by{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)} .t3k-credit .by a{color:var(--muted)}
+  .t3k-avatar{width:16px;height:16px;border-radius:50%}
+  .t3k-pick label[hidden]{display:none!important}
+  .ident-fields label[hidden]{display:none!important}
+  .pack{flex-basis:100%;display:flex;flex-direction:column;gap:2px;margin-top:6px;border-top:1px solid var(--line);padding-top:8px}
+  .pack-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+  .pack-head button{min-height:26px;padding:2px 10px;font-size:12px}
+  .t3k-pick .pack-row{display:flex!important;flex-direction:row!important;align-items:center!important;gap:10px;font-size:13px;color:var(--text);padding:3px 0}
+  .pack-row .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pack-row input[type=text]{width:10ch;padding:3px 8px;font-family:var(--mono);font-size:12px}
+  .pack-row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+  .t3k-row label{display:flex!important;flex-direction:column;align-items:stretch!important;gap:4px;font-size:12px;color:var(--muted)}
+  .t3k-row label[hidden],.t3k-row [hidden]{display:none!important}
+  .t3k-row #t3kStatus{flex-basis:100%}
+  .t3k-row button.link{background:none;border:0;color:var(--faint);text-decoration:underline;min-height:0;padding:4px}
+  .t3k-pick{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:flex-end;margin:0 0 10px}
+  .t3k-pick label{display:flex!important;flex-direction:column;align-items:stretch!important;gap:4px;font-size:12px;color:var(--muted)}
   #fxNamDspText{flex:1;min-width:240px}
   .drawer .dspmeter .bar{display:block;padding:0;width:110px;height:6px;flex:none}   /* not the drawer's button rows (.bar) */
   .nam-form{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:12px 0}
@@ -183,7 +219,7 @@
 <body>
 <div class="mw">
   <header class="mw-top" id="mwTop">
-    <div class="mw-brand"><b>MultiStomp Editor</b><small id="mwModel">MS-70CDR</small></div>
+    <div class="mw-brand"><b>MultiStomp Editor</b><small id="mwModel">Not connected</small></div>
   </header>
   <aside class="mw-side" id="mwSide" aria-label="Patches on the pedal">
     <h2>Patches on the pedal</h2>
@@ -210,45 +246,10 @@
   for(const s of scripts.filter(s=>s.getAttribute("src"))){
     await new Promise((res,rej)=>{const el=document.createElement("script");el.src=s.getAttribute("src");el.onload=res;el.onerror=()=>rej(new Error(el.src));document.head.appendChild(el);});
   }
+  window.MW_SHELL=true;   // this page shows the pedal's model itself (top left)
   const el=document.createElement("script");el.textContent=main.textContent;document.body.appendChild(el);
   arrange();
 })();
-
-// NAM / Cab: the NAM + Cab Loader page in a side panel of its own (it was a
-// link in Settings), restyled to match. Returns the button that opens it.
-function namPanel(){
-  const old=[...document.querySelectorAll("#settingsDrawer details")].find(d=>/NAM/.test(d.querySelector("summary")?.textContent||""));
-  if(old)old.hidden=true;
-  const d=document.createElement("dialog");d.id="namDrawer";d.className="drawer wide";d.setAttribute("aria-labelledby","namDrawerTitle");
-  d.innerHTML='<div class="drawer-head"><h2 id="namDrawerTitle">NAM + Cab</h2><button type="button" aria-label="Close NAM and Cab">✕</button></div><iframe class="mw-frame" title="NAM + Cab Loader"></iframe>';
-  d.querySelector(".drawer-head button").onclick=()=>d.close();
-  document.body.appendChild(d);
-  const frame=d.querySelector("iframe");
-  frame.addEventListener("load",()=>{const doc=frame.contentDocument;if(!doc)return;const s=doc.createElement("style");s.textContent=LOADER_SKIN;doc.head.appendChild(s);});
-  const b=document.createElement("button");b.type="button";b.id="openNam";b.textContent="NAM / Cab";b.title="Turn a NAM capture or cab IRs into an effect";
-  b.onclick=()=>{if(!frame.getAttribute("src"))frame.src="nam_loader.html";d.showModal();};
-  return b;
-}
-const LOADER_SKIN=`
-:root{color-scheme:dark;--ink:#f5f5f8;--paper:#212124;--panel:#2c2c31;--line:#3d3d45;--accent:#a5adff;--accent-ink:#171722}
-body{background:var(--paper);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-main{max-width:none;margin:0;background:transparent;border:0;padding:0 2px 48px;box-shadow:none}
-header{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:16px}header>a,header h1{display:none}header p{margin:0;color:#dadade}
-h2{font-size:16px;font-weight:600}a{color:var(--accent)}label{font-weight:600}.hint{color:#bebec9;font-size:13px}
-.pick,.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}.pick{border-style:dashed}
-button,.download{background:#303036;color:var(--ink);border:1px solid #55555f;border-radius:8px;padding:8px 14px;font:600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-button:hover,.download:hover{background:#38383f}#build,#buildCab,.download{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.tools button{padding:4px 10px;font-size:13px}
-input,select,.ident input,.ident select{color:var(--ink);background:#1a1a1e;border:1px solid #55555f;border-radius:8px}
-input[type=radio],input[type=checkbox]{accent-color:var(--accent)}
-input[type=file]{border:0;background:none;padding:0}
-input[type=file]::file-selector-button{margin-right:10px;background:#303036;color:var(--ink);border:1px solid #55555f;border-radius:8px;padding:6px 12px;font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;cursor:pointer}
-#result,.cabs,.resp{border-top:1px solid var(--line)}#status[data-error="true"],#cabStatus[data-error="true"]{color:#f08a7e}
-#respPlot,.fit canvas{background:#1a1a1e;border:1px solid var(--line);border-radius:8px}
-canvas.lcd{border:1px solid var(--line);border-radius:6px}.icons button{background:#111114;border:2px solid transparent;border-radius:6px}.icons button[aria-checked=true]{border-color:var(--accent)}
-.icons button:focus-visible,.icon-toggle:focus-visible{outline:2px solid var(--accent)}
-details{border-top:1px solid var(--line);padding-top:12px}footer{color:#afafbd}
-`;
 
 function arrange(){
   const $=id=>document.getElementById(id);
@@ -264,7 +265,7 @@ function arrange(){
   const patch=document.createElement("div");patch.className="mw-actions";patch.style.flex="1";patch.style.minWidth="220px";
   for(const id of ["currentPatch","dspmeter","editStatus"])patch.appendChild($(id));
   const acts=document.createElement("div");acts.className="mw-actions";
-  for(const b of [$("openLibrary"),$("openEffects"),namPanel(),$("openSettings")])if(b)acts.appendChild(b);
+  for(const id of ["openLibrary","openEffects","openNamCab","openSettings"])if($(id))acts.appendChild($(id));
   const classic=document.createElement("a");classic.href="patch_editor.html";classic.className="mw-classic";classic.textContent="Classic editor";classic.title="The original Patch Editor (same features)";
   acts.appendChild(classic);
   top.append(status,patch,acts);
@@ -297,7 +298,9 @@ function arrange(){
   // Redraw slots with this page's tokens (the knobs read them when drawn).
   try{ if(typeof render==="function")render(); }catch(e){}
   const model=$("mwModel");
-  const syncModel=()=>{try{const names={0x61:"MS-70CDR",0x58:"MS-50G",0x5f:"MS-60B"};model.textContent=(names[DEVID]||"MultiStomp")+(READ_ONLY?" · read-only":"");}catch(e){}};
+  // The pedal's own answer (patch_editor.html's PEDAL_ID): model and firmware once it has said who it is.
+  const syncModel=()=>{try{const on=!!midiOut&&midiOut.state!=="disconnected";
+    model.textContent=PEDAL_ID?PEDAL_ID.model+(PEDAL_ID.fw?" · "+PEDAL_ID.fw:"")+(READ_ONLY?" · read-only":""):on?"Connecting…":"Not connected";}catch(e){}};
   syncModel();setInterval(syncModel,2000);
 }
 </script>

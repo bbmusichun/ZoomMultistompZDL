@@ -256,3 +256,9 @@ test('capture pictures follow the loader name and icon, and fall back to the DB 
  assert.equal(e.cover,b.toString('base64'));
  saved=[];c.syncNamCaptureNames();assert.equal(e.cover,'DBPIC','record gone: DB picture back');
 });
+
+test('the whole editor script compiles (no duplicate top-level names)',()=>{
+ const scripts=[...src.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
+ assert.ok(scripts.length>0);
+ for(const code of scripts)assert.doesNotThrow(()=>new vm.Script(code));
+});
