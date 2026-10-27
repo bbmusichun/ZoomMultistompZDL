@@ -38,8 +38,40 @@ Open work, roughly in order. Done items move to [CHANGELOG.md](CHANGELOG.md).
     It needs our own copy of Zoom's MS-70CDR 2.10 Mac updater. Back up all
     50 patches first. It includes the raised DSP limit (Luca, 2026-10-23),
     so the DSP cost probes can measure it there.
+- **A fully custom firmware** by another developer (2026-10-27). Self-written
+  (no Zoom code): 4×4 USB audio (with a reamp route), MIDI, the pedal as a
+  USB disk, ZDL and ZD2 effects, his own extended effect format with an SDK
+  to come, block size 32 (1.5 ms), noise cancelling. Its author is invited
+  to Modwerk and will look at it; not named or linked here until they're
+  happy to be (the Modwerk pedal page says "a fully custom firmware in
+  development"). To find out:
+  - which pedals it runs on, and when a beta comes;
+  - whether our ZDLs run on it unmodified (Loop, the NAM/cab templates):
+    how closely it follows Zoom's effect interface (init and edit handlers);
+  - how a computer talks to it (USB disk for files, MIDI for control), so
+    the Modwerk pedal page can install on it;
+  - the format and SDK licence; whether its author would want it as the
+    Zoom base on Modwerk, or effects of ours for that format.
+  Its USB audio with reamping would let us measure effects on the pedal
+  (response, latency, CPU), check the emulator against hardware, and test
+  the NAM 44.1 kHz re-fit.
 
 ## Later
+
+- **Offline use** (request from Rhussell Pablo Reaño, 2026-10-27: unreliable
+  internet). The editor is already static files with no server, so offline is
+  mostly packaging. Cheapest first:
+  - **Installable web app (PWA):** a manifest and a service worker that caches
+    the editor, the effect files and the NAM/cab templates. Install once from
+    GitHub Pages, then it opens with no connection. Check that Web MIDI and
+    SysEx keep working in the installed app.
+  - **Download-and-run zip:** the `tools/` and `dist/` folders with a
+    double-click launcher that serves them on localhost (Web MIDI needs a
+    secure context). Check whether Chrome allows Web MIDI from `file://`.
+  - **Desktop app** (Tauri or Electron): only if the two above fall short.
+
+  TONE3000 needs the internet either way; everything else (patches, effect
+  install, NAM/cab from local files, backups) can work offline.
 
 - **Clean-room edit handlers.** Every built effect carries knob handlers
   cloned from the stock LineSel effect and a divide routine from a stock
