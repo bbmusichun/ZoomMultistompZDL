@@ -267,6 +267,24 @@ test('an older build under a retired effect ID can be removed, but is never repl
  await assert.rejects(c.fsInstall('Spool.ZDL',[]),/older build under effect ID 8\/409.*Remove it and power-cycle/);
 });
 
+test('a slot swap leaves MIDISTOMP routing (byte 17 of each slot block) with the slot position',()=>{
+ // Byte 17 of each 18-byte slot block in the decoded patch: bits 0-1 the slot's bus, bits 2-6 mixer settings of
+ // that position, bit 7 zero. Raw bytes below hold its low 7 bits; the editor models none of them, so encodePatch
+ // keeps them from the pedal's dump while the effects move.
+ const c=context();
+ vm.runInContext(['const BITS=','const NAMIDX=','const NZBITS=','for(const slot of BITS)','  if(bf[2]===','const EMPTY146='].map(k=>{const at=src.indexOf('\n'+k)+1;return src.slice(at,k==='const BITS='||k==='const EMPTY146='?src.indexOf('];',at)+2:src.indexOf('\n',at));}).join('\n')
+  +'\n'+['getBits','setBits','decodePatch','encodePatch','swapNZBits'].map(fn).join('\n')+'\nthis.api={decodePatch,encodePatch,swapNZBits};',c);
+ const {decodePatch,encodePatch,swapNZBits}=c.api;
+ const base=Array.from({length:146},(_,i)=>i<5||i===145?[0xf0,0x52,0,0x61,0x28][i]??0xf7:(i*37+11)&0x7f);
+ const routing=[25,46,66,87,107,128];
+ for(const [a,b] of [[0,1],[2,5],[3,4]]){
+  const p=decodePatch(base),t=p.fx[a];p.fx[a]=p.fx[b];p.fx[b]=t;
+  const out=encodePatch(p,swapNZBits(base,a,b));
+  assert.deepEqual(routing.map(i=>out[i]),routing.map(i=>base[i]),'swap '+(a+1)+'/'+(b+1));
+  assert.deepEqual(decodePatch(out).fx[a],decodePatch(base).fx[b],'the effect itself moved');
+ }
+});
+
 test('the whole editor script compiles (no duplicate top-level names)',()=>{
  const scripts=[...src.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
  assert.ok(scripts.length>0);
