@@ -257,6 +257,16 @@ test('capture pictures follow the loader name and icon, and fall back to the DB 
  saved=[];c.syncNamCaptureNames();assert.equal(e.cover,'DBPIC','record gone: DB picture back');
 });
 
+test('an older build under a retired effect ID can be removed, but is never replaced in place',async()=>{
+ const DB={legacy:[{name:'Spool (old 409)',gid:8,fxid:409}]},fsIndex=[{file:'Spool.ZDL',name:'Spool',gid:8,fxid:914}];
+ const old={name:'SPOOL.ZDL',size:20746,info:{gid:8,fxid:409,version:'1.01'}};
+ const c=context({DB,fsIndex,fsFiles:{files:[old]},fsCanWrite:()=>{},fsInfo:()=>({gid:8,fxid:914,version:'1.02'})});
+ vm.runInContext(src.split('\n').find(l=>l.startsWith('const fsRetired='))+'\n'+fn('fsOurs')+'\n'+fn('fsInstall'),c);
+ assert.equal(c.fsOurs('SPOOL.ZDL',old.info),true,'the old build is ours to remove');
+ assert.equal(c.fsOurs('SPOOL.ZDL',{gid:8,fxid:410}),false,'any other ID is not');
+ await assert.rejects(c.fsInstall('Spool.ZDL',[]),/older build under effect ID 8\/409.*Remove it and power-cycle/);
+});
+
 test('the whole editor script compiles (no duplicate top-level names)',()=>{
  const scripts=[...src.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
  assert.ok(scripts.length>0);

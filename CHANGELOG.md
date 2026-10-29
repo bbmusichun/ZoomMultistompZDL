@@ -6,6 +6,16 @@ dated. Effects in [dist/](dist/) carry their own version in the file
 
 ## Unreleased
 
+### Effects
+- **Spool** has a new effect ID, 914 (was 409), as version 1.02; the sound is
+  unchanged. TEcho4.ZDL from another collection used 409 too, and swapping
+  the two in Zoom Effect Manager froze an MS-70CDR at boot until its ROM was
+  reprogrammed. To update: remove the old Spool, power-cycle, then install
+  the new one ([steps](docs/INSTALLING-ZDLS.md#spools-new-effect-id-29-october-2026)).
+  Patches with the old Spool need it picked again. The Patch Editor still
+  reads them (as "Spool (old 409)"), can remove the old file, and refuses to
+  write the new ID over it in place.
+
 ### Patch Editor
 - **Effects**: install, update and remove this project's effects over USB
   on the MS-70CDR, without Zoom Effect Manager. It shows the version on the

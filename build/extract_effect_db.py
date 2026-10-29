@@ -305,6 +305,7 @@ def main() -> None:
         "Dissolve": [481],
         "Mangle":   [462, 463, 464, 465, 467, 468, 469, 483],
         "Rooms":    [471],
+        "Spool":    [409],
     }
     current_ids = {e["id"] for e in db["custom"]} | {e["id"] for e in db["stock"]}
     db["legacy"] = []

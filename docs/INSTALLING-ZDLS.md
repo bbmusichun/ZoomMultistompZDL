@@ -25,6 +25,20 @@ newer and point it at that folder.
 
 ![Enable From Folder](images/from-folder.png)
 
+## Spool's new effect ID (29 October 2026)
+
+Spool moved from effect ID 409 to 914 (version 1.02). TEcho4.ZDL in
+[repeat98/ZoomMultistompZDL](https://github.com/repeat98/ZoomMultistompZDL)
+used 409 too, and swapping one for the other in Effect Manager froze an
+MS-70CDR at boot until its ROM was reprogrammed. Never keep two effects with
+the same ID in your library or on the pedal.
+
+If your pedal has the old Spool: remove it and write the pedal, power-cycle,
+then add the new Spool.ZDL and write again. Don't swap it in one write.
+Patches that used the old Spool show an empty slot; pick Spool again there.
+The Patch Editor's Effects does the same in two steps: Remove, power-cycle,
+then Install.
+
 ## "No data to display, check filters"
 
 This is the most common report, and it is almost always one of the first two:

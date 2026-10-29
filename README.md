@@ -563,8 +563,14 @@ deep versions live in [docs/](docs/) and [build/ABI.md](build/ABI.md).
   (1=DYN, 2=FLT, 3=DRV, 6=CHO/MOD, 8=DLY, 9=REV); everything here is gid 8
   (`Fx_DLY_*`) so the pack lives together in the least crowded menu.
 - **Reserved effect IDs** (Delay group; FXIDs go up to 1023): this pack
-  403–499, NAM captures 900–907, 950–957 and 500–699, CabIR cabs 930–945 and
-  700–899. Other projects building effects for these pedals: please avoid them.
+  403–499 and 914 (Spool), NAM captures 900–907, 950–957 and 500–699, CabIR
+  cabs 930–945 and 700–899. Other projects building effects for these pedals:
+  please avoid them. 409 is retired: Spool and TEcho4 (another collection)
+  both used it, and swapping them froze a pedal at boot. The pedal matches
+  effects by ID alone, whatever the category, so a new ID must be unused in
+  every category and by every collection
+  ([repeat98's registry](https://github.com/repeat98/ZoomMultistompZDL/blob/main/docs/FXID-REGISTRY.md)
+  lists them).
 
 ## Build Your Own Effects
 

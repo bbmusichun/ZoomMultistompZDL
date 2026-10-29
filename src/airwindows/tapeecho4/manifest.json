@@ -5,9 +5,9 @@
   "audio_func_name": "Fx_DLY_Spool",
   "gid": 8,
   "gid_comment": "0x08 = Delay -> Fx_DLY_; consolidated under DLY.",
-  "fxid": 409,
-  "fxid_comment": "0x0199 in the custom Airwindows range.",
-  "fxid_version": "1.01",
+  "fxid": 914,
+  "fxid_comment": "0x0392. Was 409 until 2026-10-29, which TEcho4.ZDL (repeat98/ZoomMultistompZDL) also used: swapping the two froze an MS-70CDR at boot. 914 is used by no collection in any group.",
+  "fxid_version": "1.02",
   "flags_byte": 1,
   "params": [
     {
