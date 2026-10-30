@@ -9,6 +9,8 @@ Current custom effects:
 | Effect | Notes |
 |---|---|
 | [ott/](ott/) | OTT-style 3-band upward/downward compressor with `DryWet`, `Time`, `Output`, and `SplitFrq`. Not an Ableton port. |
+| [bbboost/](bbboost/) | Pure-gain preamp booster for a physical clean amp or NAM input; hardware-test prototype. |
+| [bbauto/](bbauto/) | Post-NAM stereo-linked automatic leveler with transparent AMP mode; hardware-test prototype. |
 
 Before adding a new custom effect, read
 [../../docs/SAFE-DSP-RULES.md](../../docs/SAFE-DSP-RULES.md). Keep the first
