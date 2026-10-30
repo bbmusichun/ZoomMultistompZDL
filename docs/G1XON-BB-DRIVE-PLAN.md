@@ -99,7 +99,7 @@ target. A host build or emulator pass cannot establish G1Xon readiness.
 - [x] Fork write access verified.
 - [x] Effect source and state-arena guard added.
 - [x] Nine-control pedal manifest added.
-- [x] Build script added; default is UI-only and DSP is opt-in.
+- [x] Build script added; default is UI-only and DSP is opt-in. The smoke build leaves later knob handlers as NOP stubs; synthesized later handlers are enabled only for the DSP candidate.
 - [ ] TI C6000 compile and offline ZDL/linker inspection.
 - [ ] G1Xon MIDI identity and patch layout verified (read-only).
 - [ ] G1Xon state-arena size and descriptor semantics verified.
