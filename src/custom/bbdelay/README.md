@@ -42,7 +42,7 @@ The exact ctx[3] descriptor contract and actual memory available on the G1Xon ar
 
 ## Implementation gates
 
-- The first two knob handlers use the stock LineSel pair. The remaining seven use the repository's synthesized compact handler path, which is not yet hardware-proven on this target.
+- The UI-only smoke build leaves the later seven knob handlers as NOP stubs, so it cannot be used to change those controls. The DSP-enabled candidate switches on the repository's synthesized compact handlers for those seven controls; that handler path is not yet hardware-proven on this target. The first two use the stock LineSel pair.
 - Custom init parameter materialization is disabled for the G1Xon candidate.
 - DSP cost 27.0 is a provisional estimate, not a G1Xon measurement.
 - The effect remains on g1xon-bbdrive-prototype and must not enter the normal release pack before hardware validation.
