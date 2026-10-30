@@ -36,17 +36,13 @@ void BBAUTO_AUDIO_FUNC(unsigned int *ctx)
     unsigned int *magicDst = ZDL_PTR(unsigned int *, *(unsigned int *)ZDL_PTR(unsigned int *, ctx[11]));
     *magicDst = *magicSrc;
 
-    if (params[0] < 0.5f) return;
-
     {
+        float enabled = params[0];
         float mode = zoom_param_norm01(params[BBAUTO_MODE_SLOT], BBAUTO_MODE_DEFAULT_NORM);
         float amount = zoom_param_norm01(params[BBAUTO_AMOUNT_SLOT], BBAUTO_AMOUNT_DEFAULT_NORM);
         volatile unsigned int *desc;
         uintptr_t base, end;
         BBAutoState *state;
-
-        /* AMP mode leaves the samples untouched and does not need state. */
-        if (mode < 0.5f || amount <= 0.0f) return;
 
         desc = ZDL_PTR(volatile unsigned int *, ctx[3]);
         if (!desc) return;
@@ -63,6 +59,14 @@ void BBAUTO_AUDIO_FUNC(unsigned int *ctx)
             state->envelope = 0.0f;
             state->gain = 1.0f;
             state->magic = BBAUTO_MAGIC;
+        }
+
+        /* Reset the follower in transparent/bypass mode so switching back to
+         * NAM always starts at unity instead of carrying stale attenuation. */
+        if (enabled < 0.5f || mode < 0.5f || amount <= 0.0f) {
+            state->envelope = 0.0f;
+            state->gain = 1.0f;
+            return;
         }
 
         bbauto_process(fxBuf, state, mode, amount);
