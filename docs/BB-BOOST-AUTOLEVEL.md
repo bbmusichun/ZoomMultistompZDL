@@ -47,13 +47,26 @@ pumps or dulls the attack.
 
 The linker declarations are provisional admission estimates: BBBoost 4 and
 BBAuto 8. These numbers are not target cycle measurements. The repository's
-NAM A2 Lite experiments declare around 194 for the full-rate test and have
-historical hardware audio-quality/timing issues. The MS-70CDR DSP-full boundary
-is around 224 in the current project notes. Therefore the full chain must be
-checked on the pedal with the selected NAM Eco/full variant, delay and reverb;
-do not assume every combination fits. Start with NAM + BBBoost + BBAuto, then
-add Delay, then Reverb one at a time. If the Zoom rejects the chain or audio
-crackles, remove the last effect and record the combination.
+NAM A2 Lite full-rate test declares around 194; the project's documented
+MS-70CDR DSP-full boundary is around 224.4. NAM + BBBoost + BBAuto therefore
+declares about 206 and leaves only about 18.4 for the rest of the chain.
+
+That is a real design constraint: the current effect database's lowest stock
+Delay and Reverb estimates are about 15.21 and 16.87 respectively. With those
+values, full-rate NAM + both new effects + Delay + Reverb would be about 238.08,
+above the observed admission boundary. An experimental NAM Eco variant around
+177 would put that particular combination near 221.08, but leaves only about
+3.3 units of margin and still requires checking whether those exact stock
+effects are available on the target pedal. A custom delay declared at 20 plus
+the 16.87 reverb would still exceed the boundary with that Eco figure.
+
+Consequently this branch first makes BBBoost and BBAuto independently
+testable. Start with NAM + BBBoost + BBAuto, then add Delay, then Reverb one at
+a time. For the full five-effect chain, we may need to merge the small BBAuto
+leveler into the custom delay after listening validation, and/or use a lower
+cost NAM variant. Never lower descriptor costs just to force an overloaded
+chain to be accepted. If the Zoom rejects the chain or audio crackles, remove
+the last effect and record the combination.
 
 ## Build
 
