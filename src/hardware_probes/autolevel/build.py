@@ -26,6 +26,7 @@ CL6X = TI_ROOT / "bin" / "cl6x"
 
 
 def main() -> None:
+    subprocess.run([sys.executable, str(HERE / "validate_host.py")], check=True)
     manifest = json.loads((HERE / "manifest.json").read_text())
     out_dir = ROOT / "build" / "probes" / "autolevel"
     out_dir.mkdir(parents=True, exist_ok=True)
