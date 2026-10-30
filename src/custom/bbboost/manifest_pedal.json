@@ -1,0 +1,24 @@
+{
+  "effect_name": "BBBoost",
+  "comment": "Ultra-light preamp gain for a physical clean amp or NAM input. Pure gain only; no internal clipping or auto-level. Put before the amp/NAM.",
+  "audio_func_name": "Fx_DLY_BBBoost",
+  "gid": 8,
+  "fxid": 492,
+  "fxid_version": "0.01",
+  "flags_byte": 1,
+  "params": [
+    {
+      "name": "Gain",
+      "max": 100,
+      "default": 0,
+      "comment": "0..+18 dB. Quadratic gain law for finer low-end control. Unity at 0."
+    },
+    {
+      "name": "Level",
+      "max": 100,
+      "default": 100,
+      "comment": "Post-boost trim, 0..100%. Keep at 100 when the goal is to drive the amp/NAM harder."
+    }
+  ],
+  "audio_nop": false
+}
