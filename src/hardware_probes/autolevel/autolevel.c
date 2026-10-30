@@ -5,7 +5,7 @@
  * estimates the programme level, then a slow feedback controller adjusts one
  * shared gain value. It does not clip, gate, compress peaks or alter tone.
  *
- * CPU design: two envelope comparisons, a few multiplies/adds and clamps per
+ * CPU design: one linked power estimate, a few multiplies/adds and clamps per
  * stereo sample. No division, libm, delay line, filters, FFT or oversampling.
  * State is per-instance in the descriptor arena; without a valid arena the
  * effect safely passes audio through.
@@ -36,11 +36,6 @@ typedef struct AutoLevelState {
 AL_CODE_SECTION(AUTOLEVEL_AUDIO_FUNC)
 
 #define ZDL_PTR(type, word) ((type)(uintptr_t)(word))
-
-static inline float al_abs(float x)
-{
-    return x < 0.0f ? -x : x;
-}
 
 void AUTOLEVEL_AUDIO_FUNC(unsigned int *ctx)
 {
