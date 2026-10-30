@@ -1,0 +1,23 @@
+{
+  "effect_name": "AutoLvl",
+  "audio_func_name": "Fx_DLY_AutoLvl",
+  "gid": 8,
+  "fxid": 402,
+  "fxid_version": "0.01",
+  "flags_byte": 1,
+  "params": [
+    {
+      "name": "Target",
+      "max": 100,
+      "default": 45,
+      "comment": "Target output RMS level. Start at 45."
+    },
+    {
+      "name": "Resp",
+      "max": 100,
+      "default": 35,
+      "comment": "Gain-riding response. Lower is smoother; higher corrects level changes faster."
+    }
+  ],
+  "comment": "Post-amp/post-NAM linked-stereo automatic level rider. No clipping, gate, compression, EQ or time-domain effects. Experimental hardware probe; DSP cost estimate 8.0."
+}
