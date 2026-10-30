@@ -1,0 +1,81 @@
+{
+  "effect_name": "BB Delay",
+  "output_basename": "BBDelay",
+  "audio_func_name": "Fx_DLY_BBDelay",
+  "comment": "Custom single-repeat delay with CLEAN/TAPE character, switchable PRE/POST booster, three-band EQ, variable delay time and echo mix. The DSP checks ctx[3] bounds and adapts its stereo ring to the available arena.",
+  "gid":  8,
+  "gid_comment": "0x08 = Delay category -> ZDL_DLY_.",
+  "fxid": 915,
+  "fxid_comment": "0x0393. Checked against tools/effects_db.json on 2026-10-30; no existing entry uses (gid=8, fxid=915).",
+  "fxid_version": "0.10",
+  "flags_byte": 1,
+  "params": [
+    {
+      "name": "Char",
+      "type": "switch",
+      "max": 1,
+      "default": 0,
+      "labels": ["CLEAN", "TAPE"],
+      "comment": "0=CLEAN, 1=TAPE. CLEAN bypasses tape coloration only."
+    },
+    {
+      "name": "Boost",
+      "type": "switch",
+      "max": 1,
+      "default": 0,
+      "labels": ["OFF", "ON"],
+      "comment": "Independent booster enable."
+    },
+    {
+      "name": "Pos",
+      "type": "enum",
+      "max": 1,
+      "default": 0,
+      "labels": ["PRE", "POST"],
+      "comment": "0=PRE (before character/EQ/delay), 1=POST (after dry/wet mix)."
+    },
+    {
+      "name": "Level",
+      "max": 100,
+      "default": 0,
+      "unit": "dB",
+      "audio_min": 0.0,
+      "audio_max": 12.0,
+      "audio_default": 0.0,
+      "comment": "Booster amount, 0 to +12 dB."
+    },
+    {
+      "name": "Bass",
+      "max": 100,
+      "default": 50,
+      "comment": "Low-band gain; centre is neutral, ends approximately -6/+6 dB."
+    },
+    {
+      "name": "Mid",
+      "max": 100,
+      "default": 50,
+      "comment": "Mid-band gain; centre is neutral, ends approximately -6/+6 dB."
+    },
+    {
+      "name": "Trebl",
+      "max": 100,
+      "default": 50,
+      "comment": "High-band gain; centre is neutral, ends approximately -6/+6 dB."
+    },
+    {
+      "name": "Time",
+      "max": 100,
+      "default": 50,
+      "unit": "ms",
+      "comment": "20 ms to the largest safe delay supported by the reported ctx[3] arena; capacity-dependent."
+    },
+    {
+      "name": "Echo",
+      "max": 100,
+      "default": 30,
+      "comment": "Single-repeat dry/wet mix. Feedback is deliberately fixed at zero in v1."
+    }
+  ],
+  "audio_nop": true,
+  "audio_nop_comment": "G1Xon safety gate: default build is a UI-only smoke ZDL. Set BBDELAY_ENABLE_DSP=1 only after the target pedal's ZDL loading and state arena have been verified."
+}
