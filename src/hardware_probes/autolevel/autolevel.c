@@ -17,11 +17,10 @@
 #define AL_MAGIC 0x414C564Cu /* 'ALVL' */
 #define AL_VERSION 1u
 
-#define AL_INPUT_FLOOR 0.0015f
-#define AL_ENV_ATTACK  0.0200f
-#define AL_ENV_RELEASE 0.0008f
-#define AL_GAIN_MIN    0.35f
-#define AL_GAIN_MAX    3.00f
+#define AL_INPUT_FLOOR_POWER 0.00000225f /* (-56.5 dBFS peak)^2 */
+#define AL_ENV_COEFF   0.0010f /* ~20 ms power averaging */
+#define AL_GAIN_MIN    0.05f
+#define AL_GAIN_MAX    4.00f
 #define AL_SILENCE_RELAX 0.00010f
 
 typedef struct AutoLevelState {
@@ -76,15 +75,18 @@ void AUTOLEVEL_AUDIO_FUNC(unsigned int *ctx)
         st->gain = 1.0f;
     }
 
-    /* Target is mean-absolute programme level, not peak level.
-     * Range 0.025..0.120; default knob value 45 -> about 0.068. */
+    /* Target is output RMS level. The detector stores mean-square power, so
+     * compare against target^2 and avoid a costly square root.
+     * Range 0.040..0.160; default knob value 45 -> about 0.094. */
     float targetKnob = zoom_param_norm01(params[5], 0.45f);
-    float target = 0.025f + targetKnob * 0.095f;
+    float target = 0.040f + targetKnob * 0.120f;
+    float targetPower = target * target;
 
-    /* Response controls only the slow gain-riding loop. The envelope detector
-     * keeps a fixed fast attack and slower release to avoid transient spikes. */
+    /* Response controls the feedback-loop speed. This multiplicative update
+     * converges without division and has a similar time constant at low and
+     * high input levels. */
     float response = zoom_param_norm01(params[6], 0.35f);
-    float gainRate = 0.00004f + response * 0.00036f;
+    float gainAdapt = 0.002f + response * 0.018f;
 
     float env = st->envelope;
     float gain = st->gain;
@@ -95,18 +97,17 @@ void AUTOLEVEL_AUDIO_FUNC(unsigned int *ctx)
     for (i = 0; i < 8; ++i) {
         float left = fxBuf[i];
         float right = fxBuf[i + 8];
-        float detector = 0.5f * (al_abs(left) + al_abs(right));
+        float detectorPower = 0.5f * (left * left + right * right);
 
-        if (detector > env)
-            env += (detector - env) * AL_ENV_ATTACK;
-        else
-            env += (detector - env) * AL_ENV_RELEASE;
+        /* One-pole mean-square detector. The same coefficient on attack and
+         * release gives a stable RMS estimate without sqrtf(). */
+        env += (detectorPower - env) * AL_ENV_COEFF;
 
-        if (detector > AL_INPUT_FLOOR) {
-            /* Closed-loop level control: drive env*gain toward target.
-             * This avoids a runtime divide or reciprocal lookup. */
-            float error = target - env * gain;
-            gain += error * gainRate;
+        if (detectorPower > AL_INPUT_FLOOR_POWER) {
+            /* Closed-loop RMS control: drive env*gain^2 toward target^2.
+             * No runtime division, reciprocal, or square root. */
+            float error = targetPower - env * gain * gain;
+            gain += gain * error * gainAdapt;
         } else {
             /* Do not wind gain up during silence; drift gently back to unity. */
             gain += (1.0f - gain) * AL_SILENCE_RELAX;
