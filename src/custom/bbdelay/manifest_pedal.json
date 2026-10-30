@@ -1,5 +1,5 @@
 {
-  "effect_name": "BB Delay",
+  "effect_name": "BBDelay",
   "output_basename": "BBDelay",
   "audio_func_name": "Fx_DLY_BBDelay",
   "comment": "Custom single-repeat delay with CLEAN/TAPE character, switchable PRE/POST booster, three-band EQ, variable delay time and echo mix. The DSP checks ctx[3] bounds and adapts its stereo ring to the available arena.",
