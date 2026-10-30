@@ -56,7 +56,7 @@ def main() -> None:
         fxid_version=manifest["fxid_version"].encode("ascii"),
         flags_byte=manifest.get("flags_byte", 1),
         audio_nop=manifest.get("audio_nop", False),
-        dsp_cost=8.0,
+        dsp_cost=4.0,
         use_object_edit_handlers=False,
         synthesize_linesel_edit_handlers=True,
         synth_edit_start_index=2,
