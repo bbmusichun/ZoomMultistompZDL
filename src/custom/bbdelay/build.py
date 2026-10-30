@@ -112,8 +112,9 @@ def main() -> None:
         audio_nop=not enable_dsp,
         # Keep the custom _init path off for the unverified G1Xon target.
         materialize_init=False,
-        # First two controls use the stock LineSel pair; later controls use
-        # compact synthesized handlers, not yet hardware-proven on G1Xon.
+        # First two controls use the stock LineSel pair. Only the DSP
+        # candidate enables compact synthesized handlers for controls 3-9;
+        # this path is not yet hardware-proven on G1Xon.
         use_object_edit_handlers=False,
         synthesize_linesel_edit_handlers=enable_dsp,
         synth_edit_start_index=2,
