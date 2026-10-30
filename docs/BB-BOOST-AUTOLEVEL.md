@@ -45,7 +45,7 @@ pumps or dulls the attack.
 
 ## DSP budget
 
-The linker declarations are provisional admission estimates: BBBoost 8 and
+The linker declarations are provisional admission estimates: BBBoost 4 and
 BBAuto 8. These numbers are not target cycle measurements. The repository's
 NAM A2 Lite experiments declare around 194 for the full-rate test and have
 historical hardware audio-quality/timing issues. The MS-70CDR DSP-full boundary
