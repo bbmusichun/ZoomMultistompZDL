@@ -115,7 +115,7 @@ def main() -> None:
         # First two controls use the stock LineSel pair; later controls use
         # compact synthesized handlers, not yet hardware-proven on G1Xon.
         use_object_edit_handlers=False,
-        synthesize_linesel_edit_handlers=True,
+        synthesize_linesel_edit_handlers=enable_dsp,
         synth_edit_start_index=2,
         knob3_blob_path="/tmp/__nonexistent__",
         knob_positions=[(2, 14, 46), (3, 55, 46), (4, 96, 46)],
