@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 #include "../bbboost_dsp.h"
-#include "../bbauto_dsp.h"
+#include "../../bbauto/bbauto_dsp.h"
 
 static void fill_stereo(float *buffer, float left, float right)
 {
