@@ -7,14 +7,14 @@ It cannot measure or compensate an effect placed after it.
 
 `Amp/NAM/Drive -> AutoLvl -> time/modulation effects -> output`
 
-AutoLvl uses one linked-stereo envelope follower and one slow feedback gain
+AutoLvl uses one linked-stereo mean-square detector and one slow feedback gain
 controller. The same gain is applied to left and right, so stereo balance is
 preserved. It aims to keep the output RMS level near the Target setting
 when the preceding amp/drive stage changes loudness.
 
 ## Controls
 
-- **Target** — target mean-absolute signal level. Start at 45.
+- **Target** — target output RMS level. Start at 45.
 - **Resp** — how quickly the gain rider corrects level changes. Start at 35;
   lower is smoother, higher reacts faster.
 
