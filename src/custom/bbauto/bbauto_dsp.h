@@ -29,7 +29,7 @@ typedef struct BBAutoState {
 } BBAutoState;
 
 #ifdef __TI_COMPILER_VERSION__
-#pragma FUNC_ALWAYS_INLINE(bbauto_process)
+#pragma FUNC_ALWAYS_INLINE(bbauto_abs)
 #endif
 static inline float bbauto_abs(float x)
 {
