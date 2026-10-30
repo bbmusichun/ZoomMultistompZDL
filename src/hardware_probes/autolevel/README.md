@@ -9,7 +9,7 @@ It cannot measure or compensate an effect placed after it.
 
 AutoLvl uses one linked-stereo envelope follower and one slow feedback gain
 controller. The same gain is applied to left and right, so stereo balance is
-preserved. It aims to keep the average programme level near the Target setting
+preserved. It aims to keep the output RMS level near the Target setting
 when the preceding amp/drive stage changes loudness.
 
 ## Controls
@@ -22,9 +22,9 @@ when the preceding amp/drive stage changes loudness.
 
 - No division, libm, FFT, oversampling, delay line, EQ, clipping or compressor
   sidechain.
-- No RMS square root: the detector uses mean absolute amplitude.
+- RMS is estimated from mean-square power; no square root or division is used.
 - Per-instance state is 16 bytes in the descriptor arena.
-- Gain is limited to 0.35x..3x. During near-silence it relaxes toward unity
+- Gain is limited to 0.05x..4x. During near-silence it relaxes toward unity
   rather than amplifying the noise floor.
 - Declared DSP cost is 8.0 as an initial conservative estimate, not a measured
   hardware benchmark.
