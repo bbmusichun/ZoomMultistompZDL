@@ -7,16 +7,20 @@ and no target ZDL is claimed until the TI C6000 compiler has built and checked i
 
 Physical clean amp:
 
-    Guitar -> BBBoost -> BBAuto (Mode=AMP, transparent) -> amp input
+    Guitar -> BBBoost -> NAM A2 Lite (bypassed) -> BBAuto (Mode=AMP)
+           -> Delay -> Reverb -> amp input
 
 NAM profile:
 
-    Guitar -> BBBoost -> NAM A2 Lite -> BBAuto (Mode=NAM) -> Delay -> Reverb
+    Guitar -> BBBoost -> NAM A2 Lite (on) -> BBAuto (Mode=NAM)
+           -> Delay -> Reverb
 
-BBAuto must be after NAM in PROFILE mode because it measures the model's
-actual output. Before NAM, it cannot know what level the NAM will produce.
-For a real amplifier it remains transparent in AMP mode. Moving the BBAuto
-slot to the post-NAM position is therefore part of changing rigs/patches.
+BBAuto stays downstream of the NAM slot in both patches. It must be after NAM
+in PROFILE mode because it measures the model's actual output. In the physical
+amp patch the NAM effect is bypassed and BBAuto is transparent in AMP mode.
+The Mode selector controls BBAuto's behavior only; it cannot switch another
+ZDL effect on/off because instances have no inter-effect control channel. Save
+the NAM on/off state and BBAuto Mode together in the two rig patches.
 
 ## Effects
 
