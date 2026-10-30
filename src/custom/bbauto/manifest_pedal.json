@@ -1,0 +1,24 @@
+{
+  "effect_name": "BBAuto",
+  "comment": "Post-NAM stereo-linked automatic level compensation. Mode AMP is transparent; Mode NAM enables a lightweight peak-envelope leveler. Place immediately after NAM and before delay/reverb.",
+  "audio_func_name": "Fx_DLY_BBAuto",
+  "gid": 8,
+  "fxid": 441,
+  "fxid_version": "0.01",
+  "flags_byte": 1,
+  "params": [
+    {
+      "name": "Mode",
+      "max": 100,
+      "default": 0,
+      "comment": "AMP = transparent pass-through; NAM = automatic post-profile level compensation."
+    },
+    {
+      "name": "Amount",
+      "max": 100,
+      "default": 60,
+      "comment": "Compensation strength. Maximum reduction is scaled from 0 to 80%; this is a peak-envelope approximation, not precision LUFS matching."
+    }
+  ],
+  "audio_nop": false
+}
